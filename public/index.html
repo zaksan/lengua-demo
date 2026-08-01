@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Lengua — learn faster with your favorite tutor</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;600;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- SCREEN 0: INTRO REEL -->
+<section id="screen-intro" class="screen active intro">
+  <div class="intro-inner">
+    <p class="intro-line" data-i="0">Isn't it strange—</p>
+    <p class="intro-line" data-i="1">how the word <em>language</em> keeps showing up in your life?</p>
+    <p class="intro-line" data-i="2">Like it's a key to a door you can feel, but can't quite name.</p>
+    <p class="intro-line" data-i="3">What if there's a whole other dimension of it. One built for exactly two people.</p>
+    <p class="intro-line" data-i="4">This is that door.</p>
+    <button class="intro-enter" id="btn-enter">Enter <span aria-hidden="true">→</span></button>
+  </div>
+  <button class="intro-skip" id="btn-skip">Skip</button>
+</section>
+
+<!-- SCREEN 1: LANDING -->
+<section id="screen-landing" class="screen">
+  <div class="topbanner">This one's just for us.</div>
+  <header class="nav">
+    <div class="logo">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 4h16v11H9l-5 5V4z" fill="#E8336D"/></svg>
+      Lengua
+    </div>
+    <nav class="navlinks">
+      <span>Find tutors</span>
+      <span>For couples</span>
+      <span>Become a tutor</span>
+      <span>Our progress</span>
+      <span class="navlink-action vt-entry">Video test</span>
+    </nav>
+    <div class="navright">
+      <span class="lang">English, USD</span>
+      <button class="btn-outline">Log In</button>
+    </div>
+  </header>
+
+  <div class="hero">
+    <div class="hero-copy">
+      <h1>Learn faster<br>with your<br><span class="accent">favorite tutor.</span></h1>
+      <p class="hero-sub">Real lessons. Real conversation. And yes — real practice for us.</p>
+      <button class="btn-primary btn-lg" id="btn-find-tutor">Find your tutor <span aria-hidden="true">→</span></button>
+    </div>
+    <div class="hero-art">
+      <div class="hero-photo">
+        <img src="assets/zacarias.jpg" alt="">
+      </div>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-num">1</div><div class="stat-label">Tutor, picked just for you</div></div>
+    <div class="stat"><div class="stat-num">∞</div><div class="stat-label">Patience, guaranteed</div></div>
+    <div class="stat"><div class="stat-num">50+</div><div class="stat-label">Giggles per lesson</div></div>
+    <div class="stat"><div class="stat-num">100%</div><div class="stat-label">Legit (wink)</div></div>
+  </div>
+</section>
+
+<!-- SCREEN 2: TUTOR LIST -->
+<section id="screen-list" class="screen">
+  <header class="nav">
+    <div class="logo">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 4h16v11H9l-5 5V4z" fill="#E8336D"/></svg>
+      Lengua
+    </div>
+    <nav class="navlinks">
+      <span>Find tutors</span>
+      <span>For couples</span>
+      <span>Become a tutor</span>
+      <span>Our progress</span>
+      <span class="navlink-action vt-entry">Video test</span>
+    </nav>
+    <div class="navright">
+      <span class="lang">English, USD</span>
+      <button class="btn-outline">Log In</button>
+    </div>
+  </header>
+
+  <div class="list-wrap">
+    <h2 class="list-title">Online Spanish tutors for private lessons</h2>
+    <p class="list-sub">You can choose from 1 Spanish tutor with an average rating of 5.0. <span class="fake-link">Read more</span></p>
+
+    <div class="filters">
+      <div class="filter"><span class="filter-label">I want to learn</span><span class="filter-val">Spanish</span></div>
+      <div class="filter"><span class="filter-label">Price per lesson</span><span class="filter-val">$50</span></div>
+      <div class="filter"><span class="filter-label">Native speaker</span><span class="filter-val">Yes</span></div>
+      <div class="filter"><span class="filter-label">I'm available</span><span class="filter-val">Any time</span></div>
+    </div>
+
+    <h3 class="list-heading">Tutors ideal for your goals and schedule</h3>
+
+    <div class="tutor-card featured">
+      <img class="tutor-photo" src="assets/zacarias.jpg" alt="Zacarias La Leche">
+      <div class="tutor-body">
+        <div class="tutor-name-row">
+          <span class="tutor-name">Zacarias La Leche</span>
+          <span class="badge-check" title="Verified">✓</span>
+        </div>
+        <div class="tutor-meta">Super Tutor · Lifetime of experience</div>
+        <div class="tutor-lang">Speaks Spanish (Native), Bad Jokes (Fluent)</div>
+        <div class="tutor-rating">5.0 <span class="stars">★★★★★</span> · 1 review · 1 student, and she's the only one that matters</div>
+        <p class="tutor-bio">Real Spanish for real life — patient, a little corny, and mostly just here to talk to you. Every lesson is a good excuse.</p>
+        <div class="tutor-tag">Popular. Booked every single week.</div>
+      </div>
+      <div class="tutor-side">
+        <div class="tutor-price">$50<span>/ 50-min lesson</span></div>
+        <button class="btn-primary" id="btn-book-trial">Book trial lesson</button>
+        <button class="btn-outline btn-block">Send message</button>
+      </div>
+    </div>
+
+    <div class="tutor-card decoy" data-toast="Nice try. There's only one tutor for this app.">
+      <div class="tutor-photo placeholder">GG</div>
+      <div class="tutor-body">
+        <div class="tutor-name-row"><span class="tutor-name">Generic Gary</span></div>
+        <div class="tutor-meta">Standard Tutor</div>
+        <div class="tutor-lang">Speaks Spanish (Textbook)</div>
+        <p class="tutor-bio">Certified. Punctual. Absolutely no chemistry.</p>
+      </div>
+      <div class="tutor-side">
+        <div class="tutor-price">$22<span>/ 50-min lesson</span></div>
+        <button class="btn-outline btn-block">Book trial lesson</button>
+      </div>
+    </div>
+
+    <div class="tutor-card decoy" data-toast="Nice try. There's only one tutor for this app.">
+      <div class="tutor-photo placeholder">RS</div>
+      <div class="tutor-body">
+        <div class="tutor-name-row"><span class="tutor-name">Roberto Sin Nombre</span></div>
+        <div class="tutor-meta">Grammar Specialist</div>
+        <div class="tutor-lang">Speaks Spanish (Native)</div>
+        <p class="tutor-bio">Knows every verb tense. Has never told a joke.</p>
+      </div>
+      <div class="tutor-side">
+        <div class="tutor-price">$28<span>/ 50-min lesson</span></div>
+        <button class="btn-outline btn-block">Book trial lesson</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SCREEN 3: VIDEO CALL -->
+<section id="screen-call" class="screen call-screen">
+  <div class="call-header">
+    <span class="call-title">Lesson with Zacarias La Leche</span>
+    <span class="call-timer" id="call-timer">00:00</span>
+  </div>
+  <div class="call-grid">
+    <div class="call-tile you">
+      <div class="tile-avatar">You</div>
+      <span class="tile-label">You</span>
+    </div>
+    <div class="call-tile them">
+      <img src="assets/zacarias.jpg" alt="">
+      <span class="tile-label">Zacarias La Leche</span>
+      <span class="live-dot"></span>
+    </div>
+  </div>
+  <div class="captions" id="captions"></div>
+  <div class="call-controls">
+    <button class="ctrl-btn" title="Mute">🎤</button>
+    <button class="ctrl-btn" title="Camera">📷</button>
+    <button class="ctrl-btn end" id="btn-end-call">End lesson</button>
+  </div>
+</section>
+
+<!-- SCREEN 4: TRAVEL FUND -->
+<section id="screen-fund" class="screen fund-screen">
+  <div class="pass">
+    <div class="pass-top">
+      <div class="pass-brand">LENGUA AIR</div>
+      <div class="pass-route">
+        <span id="fund-origin">HOME</span>
+        <span class="pass-plane">✈</span>
+        <span id="fund-destination">DEST</span>
+      </div>
+    </div>
+    <div class="pass-perf"></div>
+    <div class="pass-bottom">
+      <div class="pass-amount">
+        <span class="pass-label">Fund balance</span>
+        <span class="pass-value" id="fund-amount">$0</span>
+      </div>
+      <div class="pass-goal">
+        <span class="pass-label">Goal</span>
+        <span class="pass-value small" id="fund-goal">$0</span>
+      </div>
+    </div>
+    <div class="pass-progress">
+      <div class="pass-track">
+        <div class="pass-fill" id="fund-fill"></div>
+        <div class="pass-plane-marker" id="fund-plane">✈</div>
+      </div>
+    </div>
+    <div class="pass-lessons">Lessons logged: <span id="fund-lessons">0</span></div>
+  </div>
+  <p class="fund-note">Every lesson puts $50 into a travel fund. Each lesson is a step closer to another romantic getaway together.</p>
+  <button class="btn-primary" id="btn-again">Book another lesson</button>
+</section>
+
+<!-- SCREEN 5: VIDEO TEST — LOBBY -->
+<section id="screen-vtlobby" class="screen vt-screen">
+  <div class="vt-inner">
+    <span class="vt-kicker">Video test</span>
+    <h2 class="vt-title">Start a real lesson</h2>
+    <p class="vt-sub">One of you creates the lesson and shares the code. The other joins with it.</p>
+    <div class="vt-actions">
+      <button class="btn-primary btn-lg" id="vt-create">Create lesson</button>
+      <button class="btn-outline btn-lg" id="vt-open-join">Join lesson</button>
+    </div>
+    <button class="vt-back" id="vt-lobby-back">← Back to Lengua</button>
+  </div>
+</section>
+
+<!-- SCREEN 6: VIDEO TEST — CREATED / WAITING -->
+<section id="screen-vtcreate" class="screen vt-screen">
+  <div class="vt-inner">
+    <span class="vt-kicker">Your lesson code</span>
+    <div class="vt-code" id="vt-code">------</div>
+    <div class="vt-code-actions">
+      <button class="btn-primary" id="vt-copy">Copy code</button>
+      <button class="btn-outline" id="vt-push">Send via Pushover</button>
+    </div>
+    <div class="vt-preview">
+      <video id="vt-preview-video" class="mirror" autoplay playsinline muted></video>
+      <span class="vt-preview-label">You</span>
+    </div>
+    <p class="vt-status" id="vt-create-status">Waiting for your partner to join…</p>
+    <button class="vt-back" id="vt-create-cancel">Cancel lesson</button>
+  </div>
+</section>
+
+<!-- SCREEN 7: VIDEO TEST — JOIN -->
+<section id="screen-vtjoin" class="screen vt-screen">
+  <div class="vt-inner">
+    <span class="vt-kicker">Join a lesson</span>
+    <h2 class="vt-title">Enter the 6-digit code</h2>
+    <input id="vt-code-input" class="vt-input" type="text" inputmode="numeric"
+           autocomplete="off" maxlength="6" placeholder="000000" aria-label="Six digit lesson code">
+    <p class="vt-error" id="vt-join-error"></p>
+    <button class="btn-primary btn-lg" id="vt-join">Join lesson</button>
+    <button class="vt-back" id="vt-join-back">← Back</button>
+  </div>
+</section>
+
+<!-- SCREEN 8: VIDEO TEST — LIVE CALL -->
+<section id="screen-vtcall" class="screen call-screen">
+  <div class="call-header">
+    <span class="call-title" id="vt-call-title">Live lesson</span>
+    <span class="call-timer" id="vt-timer">00:00</span>
+  </div>
+  <div class="call-grid">
+    <div class="call-tile">
+      <video id="vt-local" class="vt-video mirror" autoplay playsinline muted></video>
+      <span class="tile-label">You</span>
+    </div>
+    <div class="call-tile">
+      <video id="vt-remote" class="vt-video" autoplay playsinline></video>
+      <span class="tile-label" id="vt-remote-label">Your partner</span>
+      <span class="live-dot" id="vt-live-dot"></span>
+      <div class="vt-tile-msg" id="vt-remote-msg">Connecting…</div>
+    </div>
+  </div>
+  <div class="vt-call-status" id="vt-status"></div>
+  <div class="call-controls">
+    <button class="ctrl-btn" id="vt-mic" title="Mute microphone">🎤</button>
+    <button class="ctrl-btn" id="vt-cam" title="Turn camera off">📷</button>
+    <button class="ctrl-btn end" id="vt-end">End lesson</button>
+  </div>
+</section>
+
+<div class="toast" id="toast"></div>
+
+<script src="app.js"></script>
+<script src="videotest.js"></script>
+</body>
+</html>

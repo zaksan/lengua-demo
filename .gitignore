@@ -1,0 +1,7 @@
+node_modules/
+.DS_Store
+npm-debug.log*
+.env
+
+# Machine-local Claude Code settings (launch.json is shared, this isn't)
+.claude/settings.local.json
