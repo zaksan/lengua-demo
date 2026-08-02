@@ -64,27 +64,92 @@ function tvToast(text){
   setTimeout(() => toast.classList.remove("show"), 2200);
 }
 
-/* A synthesized detent click — a short filtered blip. Cheaper than shipping
-   an audio file, and the context is created lazily because browsers refuse
-   to start one before the first user gesture. */
+/* ---------- detent click ----------
+   A recorded clunk, played through Web Audio rather than an <audio> element:
+   spinning the dial fires these faster than the sample is long, and buffer
+   sources overlap instead of cutting each other off the way one element
+   restarting would. The context is made lazily because browsers refuse to
+   start one before a gesture. */
+const TV_CLICK = { src: "assets/tv-click.wav", volume: 0.5 };
+let tvClickBuffer = null;
+let tvClickBytes = null;
+let tvClickDecode = null;
+
+function tvAudio(){
+  if (!tvAudioCtx){
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return null;
+    // Guarded because one caller is the screen switch, where a browser
+    // refusing another context shouldn't take navigation down with it.
+    try { tvAudioCtx = new Ctx(); } catch(e){ return null; }
+  }
+  // A context built before the page was touched starts out suspended, and
+  // every caller below sits inside a gesture, so this is the moment to lift it.
+  if (tvAudioCtx.state === "suspended") tvAudioCtx.resume().catch(() => {});
+  return tvAudioCtx;
+}
+
+/* Pulled the moment the script runs. The set powers itself on — and clicks as
+   it does — as soon as the beta screen opens, and a fetch started back there
+   loses that race to the fallback. Decoding needs a context, so it waits. */
+function tvFetchClick(){
+  if (tvClickBytes) return tvClickBytes;
+  tvClickBytes = fetch(TV_CLICK.src)
+    .then(res => {
+      if (!res.ok) throw new Error(res.status);
+      return res.arrayBuffer();
+    })
+    .catch(() => { tvClickBytes = null; return null; });
+  return tvClickBytes;
+}
+tvFetchClick();
+
+function tvLoadClick(ctx){
+  if (tvClickDecode) return tvClickDecode;
+  tvClickDecode = tvFetchClick()
+    .then(bytes => {
+      if (!bytes) throw new Error("click sample unavailable");
+      /* Callback form, since older Safari's decodeAudioData returns nothing.
+         Handed a copy because decoding detaches the buffer, which would leave
+         a retry with nothing to read. */
+      return new Promise((ok, fail) => ctx.decodeAudioData(bytes.slice(0), ok, fail));
+    })
+    .then(buffer => { tvClickBuffer = buffer; })
+    .catch(() => { tvClickDecode = null; });   // let a later click try again
+  return tvClickDecode;
+}
+
+/* Covers the gap before the sample has decoded, and anything that can't load
+   it at all — a synthesized blip beats a dial that turns in silence. */
+function tvSynthClick(ctx){
+  const now = ctx.currentTime;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = "square";
+  osc.frequency.setValueAtTime(1400, now);
+  osc.frequency.exponentialRampToValueAtTime(320, now + 0.045);
+  gain.gain.setValueAtTime(0.055, now);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.055);
+  osc.connect(gain).connect(ctx.destination);
+  osc.start(now);
+  osc.stop(now + 0.06);
+}
+
 function tvClickSound(){
   try {
-    if (!tvAudioCtx){
-      const Ctx = window.AudioContext || window.webkitAudioContext;
-      if (!Ctx) return;
-      tvAudioCtx = new Ctx();
+    const ctx = tvAudio();
+    if (!ctx) return;
+    if (!tvClickBuffer){
+      tvLoadClick(ctx);
+      tvSynthClick(ctx);
+      return;
     }
-    const now = tvAudioCtx.currentTime;
-    const osc = tvAudioCtx.createOscillator();
-    const gain = tvAudioCtx.createGain();
-    osc.type = "square";
-    osc.frequency.setValueAtTime(1400, now);
-    osc.frequency.exponentialRampToValueAtTime(320, now + 0.045);
-    gain.gain.setValueAtTime(0.055, now);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.055);
-    osc.connect(gain).connect(tvAudioCtx.destination);
-    osc.start(now);
-    osc.stop(now + 0.06);
+    const src = ctx.createBufferSource();
+    const gain = ctx.createGain();
+    src.buffer = tvClickBuffer;
+    gain.gain.value = TV_CLICK.volume;
+    src.connect(gain).connect(ctx.destination);
+    src.start();
   } catch(e){}
 }
 
@@ -869,6 +934,11 @@ showScreen = function(name){
   showScreenBeforeBeta(name);
   if (name === "beta"){
     tvLayoutTicks();
+    /* Fetch and decode the click now. Opening the set is itself a gesture, so
+       the context is allowed to start, and the first turn of the dial gets the
+       real clunk instead of the fallback blip. */
+    const audio = tvAudio();
+    if (audio) tvLoadClick(audio);
     /* The set comes on by itself, but only once the channel list has landed,
        so that a channel holding something tunes straight to it rather than
        flashing static until the dial moves. Channel 1 is left empty on
