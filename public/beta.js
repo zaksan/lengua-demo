@@ -45,6 +45,7 @@ const tvVideo   = tvGet("tv-video");
 const tvYtHold  = tvGet("tv-yt-holder");
 const tvCanvas  = tvGet("tv-static");
 const tvMsg     = tvGet("tv-msg");
+const tvSound   = tvGet("tv-sound");
 const tvOsd     = tvGet("tv-osd");
 const tvWarmup  = tvGet("tv-warmup");
 const tvDial    = tvGet("tv-dial");
@@ -187,11 +188,13 @@ function onYouTubeIframeAPIReady(){
           } catch(err){}
         }
         /* Reaching PLAYING is not on its own proof that the channel can be
-           heard, so the autoplay check is left running to see whether it is
-           playing silently. It cancels itself once it finds sound. */
+           heard: iOS answers a refused unmute by playing silently rather than
+           not playing at all, so the sound is checked the moment there is a
+           picture instead of waiting out the autoplay timer below. */
         if (e.data === YT.PlayerState.PLAYING){
           tvStopStatic();
           tvShowMsg("");
+          try { if (ytPlayer.isMuted()) tvArmUnmute(); } catch(err){}
         }
       }
     }
@@ -200,13 +203,20 @@ function onYouTubeIframeAPIReady(){
 window.onYouTubeIframeAPIReady = onYouTubeIframeAPIReady;
 
 /* When a browser has refused sound and we settled for a muted picture, the
-   next touch of anything on the page is a gesture, so the sound can come back
-   right then instead of making the viewer power cycle the set to get it. */
+   next touch of anything is a gesture and can carry the sound back.
+
+   iOS makes this the normal path rather than the exception: a video may only
+   be unmuted during a tap, and the tap that picks a channel happens before
+   that channel has loaded, so there is nothing yet to unmute. One further tap
+   is genuinely required, so the set asks for it instead of sitting there
+   mysteriously silent. */
 function tvArmUnmute(){
   if (tvUnmuteArmed) return;
   tvUnmuteArmed = true;
+  tvSound.hidden = false;
   const restore = () => {
     tvUnmuteArmed = false;
+    tvSound.hidden = true;
     document.removeEventListener("pointerdown", restore, true);
     document.removeEventListener("keydown", restore, true);
     if (!tvOn) return;
@@ -539,6 +549,7 @@ function tvPowerOff(silent){
   tvStopSources();
   tvStopStatic();
   tvShowMsg("");
+  tvSound.hidden = true;      // nothing to ask for on a dark tube
   tvOsd.classList.remove("on");
   tvWarmup.classList.remove("warm");
   if (!silent){

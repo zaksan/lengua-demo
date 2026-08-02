@@ -400,6 +400,25 @@ h1,h2,h3,.logo,.pass-brand{font-family:'Unbounded',sans-serif;}
   top:7%;right:7%;font-size:17px;font-weight:700;letter-spacing:2px;
   opacity:0;transition:opacity .35s;
 }
+
+/* iOS will not let a channel be unmuted except during a tap, and the tap that
+   picks the channel comes too early to count — the video has not loaded yet.
+   Rather than leave a silent picture looking broken, the set asks for the tap
+   it needs. Not clickable itself: any tap anywhere restores the sound. */
+.tv-sound{
+  position:absolute;left:50%;bottom:7%;transform:translateX(-50%);
+  padding:7px 14px;border-radius:999px;pointer-events:none;white-space:nowrap;
+  font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:2px;
+  color:rgba(226,255,226,.92);background:rgba(8,14,8,.62);
+  border:1px solid rgba(150,255,160,.4);
+  text-shadow:0 0 8px rgba(150,255,160,.6);
+  animation:tvSoundPulse 1.9s ease-in-out infinite;
+}
+.tv-sound[hidden]{display:none;}
+@keyframes tvSoundPulse{
+  0%,100%{opacity:.62;}
+  50%{opacity:1;}
+}
 .tv-osd.on{opacity:1;}
 
 /* Switch-on: a bright line springs open to fill the tube. Switch-off runs the
