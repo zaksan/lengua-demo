@@ -76,6 +76,14 @@ h1,h2,h3,.logo,.pass-brand{font-family:'Unbounded',sans-serif;}
 }
 .stat{text-align:center;}
 .stat-num{font-size:32px;font-weight:600;font-family:'Unbounded',sans-serif;color:var(--pink-dark);}
+/* A serif lemniscate has the tapered stroke the geometric Unbounded one
+   lacks. The line-height is pinned to the 40px box the 32px siblings compute
+   to, so the bigger glyph overflows its line rather than shoving this stat's
+   label out of line with the rest of the row. */
+.stat-infinity{
+  font-family:Georgia,'Times New Roman',serif;
+  font-size:58px;line-height:40px;font-weight:400;
+}
 .stat-label{font-size:13px;color:var(--muted);margin-top:6px;max-width:130px;}
 
 /* ---------- TUTOR LIST ---------- */
