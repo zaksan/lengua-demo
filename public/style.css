@@ -25,6 +25,7 @@ h1,h2,h3,.logo,.pass-brand{font-family:'Unbounded',sans-serif;}
 .screen.active.call-screen,
 .screen.active.fund-screen,
 .screen.active.vt-screen,
+.screen.active.vt-stage,
 .screen.active.beta-screen{display:flex;}
 @keyframes fadein{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
 
@@ -286,10 +287,108 @@ h1,h2,h3,.logo,.pass-brand{font-family:'Unbounded',sans-serif;}
   border-radius:8px;max-width:80%;text-align:center;
 }
 .ctrl-btn.off{background:var(--pink);position:relative;}
+/* Distinct from .off — pink there means "muted", so an enabled filter needs
+   its own colour or the two states read as the same thing. */
+.ctrl-btn.active{background:var(--gold);color:#1b1710;}
+.ctrl-btn:disabled{opacity:.4;cursor:default;}
+
+/* Parked off-screen rather than display:none — a hidden video element is
+   allowed to stop producing frames, which would freeze the composite. */
+.vt-offscreen{
+  position:fixed;left:-9999px;top:0;width:1px;height:1px;
+  overflow:hidden;opacity:0;pointer-events:none;
+}
+
+/* ---------- VIDEO TEST: CALL STAGE ----------
+   Partner fills the screen, you sit in a corner thumbnail. Separate from the
+   .call-grid two-up used by the scripted demo, which stays as it is. */
+.vt-stage{
+  --vt-gap:18px;
+  --vt-self-w:176px;
+  --vt-self-h:99px;
+  /* Distance from each edge to the matching edge of the thumbnail. The bottom
+     figure clears the control row so the two can never overlap. */
+  --vt-self-top:calc(64px + env(safe-area-inset-top, 0px));
+  --vt-self-bottom:calc(112px + env(safe-area-inset-bottom, 0px));
+
+  /* Resolved once here so the height and the corner offsets below can't drift
+     apart, and older browsers still get a working 100vh. */
+  --vt-h:100vh;
+
+  position:relative;overflow:hidden;
+  /* An exact height, not min-height: the thumbnail's corner offsets are
+     measured against the viewport, so the stage has to be the viewport. */
+  height:var(--vt-h);
+  background:var(--ink);color:#fff;
+}
+/* dvh tracks the mobile URL bar collapsing; 100vh does not. */
+@supports (height:100dvh){
+  .vt-stage{--vt-h:100dvh;}
+}
+.vt-main{position:absolute;inset:0;z-index:0;background:#26221c;}
+/* Filling the frame is the point, but on a portrait phone cover would crop a
+   16:9 partner down to a strip through the middle of their face. */
+@media (orientation:portrait){
+  .vt-stage #vt-remote{object-fit:contain;}
+}
+
+/* Scrims, so white text stays readable whatever the video is doing. */
+.vt-topbar,.vt-bottombar{position:absolute;left:0;right:0;z-index:2;pointer-events:none;}
+.vt-topbar{
+  top:0;display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:calc(16px + env(safe-area-inset-top, 0px)) 20px 40px;
+  background:linear-gradient(to bottom,rgba(0,0,0,.6),rgba(0,0,0,0));
+}
+.vt-bottombar{
+  bottom:0;
+  padding:48px 16px calc(14px + env(safe-area-inset-bottom, 0px));
+  background:linear-gradient(to top,rgba(0,0,0,.7),rgba(0,0,0,0));
+}
+.vt-bottombar .vt-call-status{margin:0 auto 8px;min-height:0;}
+.vt-bottombar .call-controls{padding:0;pointer-events:auto;flex-wrap:wrap;}
+/* The title and timer are very different widths, so let them share the slack
+   evenly — otherwise "space-between" leaves the middle label off-centre. */
+.vt-topbar .call-title{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.vt-topbar .call-timer{flex:1;text-align:right;}
+.vt-who{display:flex;align-items:center;gap:8px;font-size:13px;color:#e8e2d8;flex:none;}
+/* The dot is corner-pinned inside a tile elsewhere; here it rides in a row. */
+.vt-who .live-dot{position:static;flex:none;}
+
+.vt-self{
+  position:absolute;left:0;top:0;z-index:3;
+  width:var(--vt-self-w);height:var(--vt-self-h);
+  padding:0;border:none;border-radius:12px;overflow:hidden;
+  background:#26221c;cursor:pointer;
+  box-shadow:0 6px 20px rgba(0,0,0,.45);
+  transition:transform .28s cubic-bezier(.2,.7,.3,1);
+}
+.vt-self:focus-visible{outline:2px solid var(--gold);outline-offset:3px;}
+.vt-self .tile-label{font-size:11px;padding:2px 7px;bottom:6px;left:7px;}
+/* Moved with transform rather than the inset properties: a transition from
+   `auto` to a length doesn't animate, but transforms do. */
+.vt-self[data-corner="tl"]{transform:translate(var(--vt-gap),var(--vt-self-top));}
+.vt-self[data-corner="tr"]{transform:translate(calc(100vw - var(--vt-self-w) - var(--vt-gap)),var(--vt-self-top));}
+.vt-self[data-corner="bl"]{transform:translate(var(--vt-gap),calc(var(--vt-h) - var(--vt-self-h) - var(--vt-self-bottom)));}
+.vt-self[data-corner="br"]{transform:translate(calc(100vw - var(--vt-self-w) - var(--vt-gap)),calc(var(--vt-h) - var(--vt-self-h) - var(--vt-self-bottom)));}
+@media (prefers-reduced-motion:reduce){
+  .vt-self{transition:none;}
+}
 
 @media (max-width:760px){
   .vt-code{font-size:34px;letter-spacing:4px;padding:14px 16px;}
   .vt-input{font-size:26px;letter-spacing:6px;}
+  .vt-stage{
+    --vt-gap:12px;
+    --vt-self-w:112px;
+    --vt-self-h:63px;
+    --vt-self-top:calc(56px + env(safe-area-inset-top, 0px));
+    --vt-self-bottom:calc(104px + env(safe-area-inset-bottom, 0px));
+  }
+  .vt-topbar{font-size:13px;padding-bottom:32px;}
+  .vt-topbar .call-title{font-size:14px;}
+  /* Three labels don't fit across a phone. The red dot carries the "we're
+     connected" signal on its own, so the partner's name is the one to drop. */
+  .vt-who #vt-remote-label{display:none;}
 }
 
 /* ---------- BETA: 1965 CONSOLE TV ----------

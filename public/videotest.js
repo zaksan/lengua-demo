@@ -89,7 +89,7 @@ function handleMessage(msg){
     // Ask for the camera now rather than when the partner arrives, so
     // permission problems surface early and the wait isn't a dead screen.
     acquireMedia().then(stream => {
-      if (stream) $("vt-preview-video").srcObject = stream;
+      if (stream) applyStreamToViews();
     });
     return;
   }
@@ -188,11 +188,202 @@ function mediaError(text){
   $("vt-create-status").textContent = text;
 }
 
+/* ---------- space ranger filter ----------
+   The overlay has to reach the partner, so a CSS layer over the video won't
+   do — the frames themselves get repainted. The camera plays into an
+   off-screen <video>, a canvas redraws each frame with the cutout on top,
+   and canvas.captureStream() yields a track that replaces the camera track
+   on the sender. replaceTrack swaps same-kind tracks without renegotiating,
+   so this never disturbs the SDP. */
+const FILTER = {
+  src: "assets/filter-buzz.png",
+  fps: 30,
+  /* Geometry as fractions of the frame, tuned against a stand-in portrait.
+     `width` is how wide the artwork is drawn; `shoulderY` is where its collar
+     line lands, so a face — assumed centred, since nothing here tracks it —
+     sits in the opening above the shoulders. */
+  width: 0.85,
+  shoulderY: 0.70,
+  /* Where the collar sits inside the artwork itself, measured off the PNG. */
+  artShoulder: 0.093
+};
+
+let filterOn = false;
+let filterStream = null;
+let filterTimer = null;
+let overlayImg = null;
+let overlayPromise = null;
+
+function loadOverlay(){
+  if (!overlayPromise){
+    overlayPromise = new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error("overlay artwork failed to load"));
+      img.src = FILTER.src;
+    }).catch(err => { overlayPromise = null; throw err; });
+  }
+  return overlayPromise;
+}
+
+function localVideoTrack(){
+  return localStream ? (localStream.getVideoTracks()[0] || null) : null;
+}
+
+/* What goes out on the wire: the composite while the filter is up, the plain
+   camera otherwise. */
+function outboundVideoTrack(){
+  if (filterOn && filterStream){
+    const track = filterStream.getVideoTracks()[0];
+    if (track) return track;
+  }
+  return localVideoTrack();
+}
+
+/* Our own tiles show the same stream the peer receives, so the two ends can
+   never silently disagree about whether the filter is on. */
+function displayStream(){
+  return (filterOn && filterStream) ? filterStream : localStream;
+}
+
+function applyStreamToViews(){
+  const stream = displayStream();
+  ["vt-local", "vt-preview-video"].forEach(id => {
+    const el = $(id);
+    if (el && el.srcObject !== stream) el.srcObject = stream;
+  });
+}
+
+async function syncOutboundVideo(){
+  if (!pc) return;
+  const sender = pc.getSenders().find(s => s.track && s.track.kind === "video");
+  const track = outboundVideoTrack();
+  if (!sender || !track || sender.track === track) return;
+  try {
+    await sender.replaceTrack(track);
+  } catch (err){
+    console.warn("[vt] couldn't swap the outgoing video track", err);
+  }
+}
+
+function paintFilterButton(){
+  const btn = $("vt-filter");
+  if (!btn) return;
+  btn.classList.toggle("active", filterOn);
+  btn.setAttribute("aria-pressed", String(filterOn));
+  btn.title = filterOn ? "Remove the space ranger filter" : "Space ranger filter";
+}
+
+function drawFilterFrame(){
+  const raw = $("vt-raw");
+  const canvas = $("vt-canvas");
+  if (!raw || !canvas || !raw.videoWidth) return;
+
+  if (canvas.width !== raw.videoWidth || canvas.height !== raw.videoHeight){
+    canvas.width = raw.videoWidth;
+    canvas.height = raw.videoHeight;
+  }
+  const ctx = canvas.getContext("2d");
+  const W = canvas.width, H = canvas.height;
+
+  // A disabled track keeps delivering (black) frames, so the camera toggle
+  // has to be honoured here too — otherwise "camera off" would still send a
+  // cheerfully lit space ranger.
+  const track = localVideoTrack();
+  if (track && !track.enabled){
+    ctx.fillStyle = "#26221c";
+    ctx.fillRect(0, 0, W, H);
+    return;
+  }
+
+  ctx.drawImage(raw, 0, 0, W, H);
+  if (overlayImg){
+    const dw = W * FILTER.width;
+    const dh = dw * (overlayImg.naturalHeight / overlayImg.naturalWidth);
+    const x = (W - dw) / 2;
+    const y = H * FILTER.shoulderY - dh * FILTER.artShoulder;
+    ctx.drawImage(overlayImg, x, y, dw, dh);
+  }
+}
+
+/* A timer rather than requestAnimationFrame: rAF stops dead while the tab is
+   in the background, which would freeze the canvas — and since the canvas is
+   what the peer is receiving, they'd be left staring at one still frame with
+   no clue anything was wrong. A throttled timer degrades to a low frame rate
+   instead, which is survivable. */
+function startFilterLoop(){
+  if (filterTimer !== null) return;
+  filterTimer = setInterval(drawFilterFrame, Math.round(1000 / FILTER.fps));
+  drawFilterFrame();
+}
+
+function stopFilterLoop(){
+  if (filterTimer !== null){
+    clearInterval(filterTimer);
+    filterTimer = null;
+  }
+}
+
+async function startFilter(){
+  const track = localVideoTrack();
+  if (!track) return false;
+
+  try {
+    overlayImg = await loadOverlay();
+  } catch (err){
+    vtToast("Couldn't load the filter artwork.");
+    return false;
+  }
+
+  const raw = $("vt-raw");
+  // Video only — the camera track is already carrying audio to the peer, and
+  // feeding it in here as well risks a second playback path.
+  raw.srcObject = new MediaStream([track]);
+  try { await raw.play(); } catch(e){}
+
+  // captureStream inherits the canvas size, so the canvas has to know the
+  // frame dimensions before the stream is taken or it starts at 300x150.
+  if (!raw.videoWidth){
+    await new Promise(resolve => {
+      const done = () => { raw.removeEventListener("loadedmetadata", done); resolve(); };
+      raw.addEventListener("loadedmetadata", done);
+      setTimeout(done, 1500);
+    });
+  }
+
+  filterOn = true;
+  startFilterLoop();
+  if (!filterStream) filterStream = $("vt-canvas").captureStream(FILTER.fps);
+
+  applyStreamToViews();
+  await syncOutboundVideo();
+  paintFilterButton();
+  return true;
+}
+
+function stopFilter(){
+  filterOn = false;
+  stopFilterLoop();
+  if (filterStream){
+    filterStream.getTracks().forEach(t => { try { t.stop(); } catch(e){} });
+    filterStream = null;
+  }
+  const raw = $("vt-raw");
+  if (raw){
+    try { raw.pause(); } catch(e){}
+    raw.srcObject = null;
+  }
+  paintFilterButton();
+}
+
 /* Every screen stays in the DOM — only `display` changes — so a hidden
    <video> would keep the camera light on. Stop the tracks explicitly;
    nulling srcObject alone does not stop them, and stopping without
    nulling can leave Safari's indicator lit. Both are needed. */
 function teardownMedia(){
+  // Before the camera goes: the render loop and the captured canvas track
+  // would otherwise keep running against a dead source.
+  stopFilter();
   if (localStream){
     localStream.getTracks().forEach(t => { try { t.stop(); } catch(e){} });
     localStream = null;
@@ -239,6 +430,9 @@ function ensurePeer(){
     peerPromise = (async () => {
       await acquireMedia();
       buildPeer();
+      // The filter can already be up if the peer is rebuilt mid-session, and
+      // buildPeer only knows about the raw camera track.
+      await syncOutboundVideo();
       return pc;
     })();
   }
@@ -333,8 +527,12 @@ async function enterCall(){
   $("vt-timer").textContent = "00:00";
   $("vt-call-title").textContent = "Live lesson · " + myCode;
 
+  setSelfCorner(0);
   await ensurePeer();
-  if (localStream) $("vt-local").srcObject = localStream;
+  applyStreamToViews();
+  // No camera means nothing to composite — the audio-only fallback path.
+  $("vt-filter").disabled = !localVideoTrack();
+  paintFilterButton();
 }
 
 function setRemoteMsg(text){
@@ -475,6 +673,38 @@ $("vt-cam").addEventListener("click", () => {
   $("vt-cam").setAttribute("aria-pressed", String(!track.enabled));
   $("vt-cam").title = track.enabled ? "Turn camera off" : "Turn camera on";
 });
+
+$("vt-filter").addEventListener("click", async () => {
+  const btn = $("vt-filter");
+  if (btn.disabled) return;
+  // Compositing and the track swap are both async; a double tap part way
+  // through would leave the sender and the button disagreeing.
+  btn.disabled = true;
+  try {
+    if (filterOn){
+      stopFilter();
+      applyStreamToViews();
+      await syncOutboundVideo();
+    } else {
+      await startFilter();
+    }
+  } finally {
+    btn.disabled = !localVideoTrack();
+  }
+});
+
+/* Tap your own thumbnail to park it in the next corner — the usual escape
+   hatch for when it's sitting on top of whatever your partner is showing you.
+   Order runs anticlockwise from the default bottom-right. */
+const VT_CORNERS = ["br", "bl", "tl", "tr"];
+let selfCorner = 0;
+
+function setSelfCorner(index){
+  selfCorner = ((index % VT_CORNERS.length) + VT_CORNERS.length) % VT_CORNERS.length;
+  $("vt-self").dataset.corner = VT_CORNERS[selfCorner];
+}
+
+$("vt-self").addEventListener("click", () => setSelfCorner(selfCorner + 1));
 
 $("vt-end").addEventListener("click", () => {
   leaveSession();

@@ -256,29 +256,44 @@
   </div>
 </section>
 
-<!-- SCREEN 8: VIDEO TEST — LIVE CALL -->
-<section id="screen-vtcall" class="screen call-screen">
-  <div class="call-header">
+<!-- SCREEN 8: VIDEO TEST — LIVE CALL
+     Your partner fills the screen and you sit in a corner thumbnail, the way
+     Zoom and Meet do it. Deliberately not the .call-grid used by the scripted
+     demo on screen-call — that one is finished and stays a two-up grid. -->
+<section id="screen-vtcall" class="screen vt-stage">
+  <div class="vt-main">
+    <video id="vt-remote" class="vt-video" autoplay playsinline></video>
+    <div class="vt-tile-msg" id="vt-remote-msg">Connecting…</div>
+  </div>
+
+  <div class="vt-topbar">
     <span class="call-title" id="vt-call-title">Live lesson</span>
+    <span class="vt-who"><span class="live-dot" id="vt-live-dot"></span><span id="vt-remote-label">Your partner</span></span>
     <span class="call-timer" id="vt-timer">00:00</span>
   </div>
-  <div class="call-grid">
-    <div class="call-tile">
-      <video id="vt-local" class="vt-video mirror" autoplay playsinline muted></video>
-      <span class="tile-label">You</span>
-    </div>
-    <div class="call-tile">
-      <video id="vt-remote" class="vt-video" autoplay playsinline></video>
-      <span class="tile-label" id="vt-remote-label">Your partner</span>
-      <span class="live-dot" id="vt-live-dot"></span>
-      <div class="vt-tile-msg" id="vt-remote-msg">Connecting…</div>
+
+  <button class="vt-self" id="vt-self" data-corner="br"
+          aria-label="Move your video to the next corner">
+    <video id="vt-local" class="vt-video mirror" autoplay playsinline muted></video>
+    <span class="tile-label">You</span>
+  </button>
+
+  <div class="vt-bottombar">
+    <div class="vt-call-status" id="vt-status"></div>
+    <div class="call-controls">
+      <button class="ctrl-btn" id="vt-mic" title="Mute microphone">🎤</button>
+      <button class="ctrl-btn" id="vt-cam" title="Turn camera off">📷</button>
+      <button class="ctrl-btn" id="vt-filter" title="Space ranger filter" aria-pressed="false">⚡</button>
+      <button class="ctrl-btn end" id="vt-end">End lesson</button>
     </div>
   </div>
-  <div class="vt-call-status" id="vt-status"></div>
-  <div class="call-controls">
-    <button class="ctrl-btn" id="vt-mic" title="Mute microphone">🎤</button>
-    <button class="ctrl-btn" id="vt-cam" title="Turn camera off">📷</button>
-    <button class="ctrl-btn end" id="vt-end">End lesson</button>
+
+  <!-- Scratch surfaces for the filter. The camera feed is played here
+       off-screen while the canvas composites it with the overlay; the
+       canvas stream is what both the local tile and the peer receive. -->
+  <div class="vt-offscreen" aria-hidden="true">
+    <video id="vt-raw" autoplay playsinline muted></video>
+    <canvas id="vt-canvas"></canvas>
   </div>
 </section>
 
