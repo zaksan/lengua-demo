@@ -26,6 +26,7 @@ let tvEntries = {};        // "3" -> { type, ... }
 let tvStaticTimer = null;
 let tvOsdTimer = null;
 let tvBurstTimer = null;
+let tvBursting = false;    // static is deliberately covering a source that already started
 let tvDialAngle = 0;       // accumulates so repeated clicks keep turning one way
 let tvDragging = false;
 let tvAudioCtx = null;
@@ -109,6 +110,9 @@ function tvStartStatic(){
 // Always paired with hiding the canvas: a noise loop left running on a screen
 // nobody is looking at is pure battery drain on a phone.
 function tvStopStatic(){
+  // A source that starts mid-burst must stay hidden behind the noise until the
+  // burst has run its course, or the channel change loses its snap.
+  if (tvBursting) return;
   clearInterval(tvStaticTimer);
   tvStaticTimer = null;
   tvCanvas.classList.remove("on");
@@ -182,13 +186,10 @@ function onYouTubeIframeAPIReady(){
             ytPlayer.playVideo();
           } catch(err){}
         }
-        // Sound is confirmed working, so the silent fallback below must be
-        // called off before it mutes a channel that was never in trouble.
-        // Only PLAYING counts: a blocked player reports BUFFERING for a beat
-        // before dropping back to UNSTARTED, and calling it off then would
-        // strand the channel on a frozen frame.
+        /* Reaching PLAYING is not on its own proof that the channel can be
+           heard, so the autoplay check is left running to see whether it is
+           playing silently. It cancels itself once it finds sound. */
         if (e.data === YT.PlayerState.PLAYING){
-          clearTimeout(ytAutoplayTimer);
           tvStopStatic();
           tvShowMsg("");
         }
@@ -246,9 +247,18 @@ function tvPlayYouTube(entry){
      instead of being silenced. */
   ytAutoplayTries = 0;
   ytAutoplayTimer = setTimeout(function check(){
-    let state;
-    try { state = ytPlayer.getPlayerState(); } catch(e){ return; }
-    if (state === YT.PlayerState.PLAYING) return;
+    let state, muted;
+    try {
+      state = ytPlayer.getPlayerState();
+      muted = ytPlayer.isMuted();
+    } catch(e){ return; }
+
+    if (state === YT.PlayerState.PLAYING){
+      // Safari answers a refused unmute by playing silently rather than not at
+      // all, so a running channel still has to be checked for sound.
+      if (muted) tvArmUnmute();
+      return;
+    }
     if (state === YT.PlayerState.BUFFERING && ytAutoplayTries < 2){
       ytAutoplayTries++;
       ytAutoplayTimer = setTimeout(check, 2500);
@@ -328,16 +338,42 @@ function tvTune(){
   }
 }
 
-// The burst does double duty: it sells the channel change and it hides
-// however long the next source takes to start.
+/* The burst does double duty: it sells the channel change and it hides however
+   long the next source takes to start.
+
+   It used to delay the tune itself by burstMs. Safari on iOS grants sound only
+   to the gesture that asked for it and a timer does not count, so tuning from
+   a timer arrived without permission and the channel played silently until the
+   screen was tapped again. The source is now started inside the tap and the
+   noise is simply left on top of it for the length of the burst, which looks
+   the same from the sofa. */
 function tvTuneWithBurst(){
   if (!tvOn) return;
-  tvStopSources();
-  tvShowMsg("");
-  tvStartStatic();
   clearTimeout(tvBurstTimer);
-  tvBurstTimer = setTimeout(tvTune, TV.burstMs);
+  tvBursting = true;
+  tvStartStatic();
+  tvTune();
+  tvBurstTimer = setTimeout(() => {
+    tvBursting = false;
+    // Uncover the new channel only once there is really a picture behind the
+    // noise. A slow one stays hidden until it starts, and an empty or dead
+    // channel keeps its static for good.
+    if (tvOn && tvSourceRunning()) tvStopStatic();
+  }, TV.burstMs);
 }
+
+/* A source that has been asked to start is not the same as one that is
+   running, and the difference decides whether the static can come off. */
+function tvSourceRunning(){
+  if (tvVideo.classList.contains("on")) return !tvVideo.paused;
+  if (tvYtHold.classList.contains("on")){
+    try { return ytPlayer.getPlayerState() === YT.PlayerState.PLAYING; } catch(e){ return false; }
+  }
+  return false;
+}
+
+// Covers an uploaded clip that only gets going after the burst has finished.
+tvVideo.addEventListener("playing", () => { if (tvOn) tvStopStatic(); });
 
 /* ---------- dial ---------- */
 function tvRenderTicks(){
@@ -489,13 +525,17 @@ function tvPowerOn(){
   tvWarmup.classList.add("warm");
   tvClickSound();
   tvShowOsd("CH " + tvChannel);
-  setTimeout(() => { if (tvOn) tvTune(); }, TV.warmupMs * 0.45);
+  // Tuned inside the press for the same reason the burst is: waiting out the
+  // warm-up animation would cost the channel its sound on iOS. The flash plays
+  // over the top of whatever has started.
+  tvTune();
 }
 
 function tvPowerOff(silent){
   tvOn = false;
   tvPower.setAttribute("aria-pressed", "false");
   clearTimeout(tvBurstTimer);
+  tvBursting = false;        // or the noise would be left frozen on a dark tube
   tvStopSources();
   tvStopStatic();
   tvShowMsg("");
@@ -822,7 +862,16 @@ showScreen = function(name){
        so that a channel holding something tunes straight to it rather than
        flashing static until the dial moves. Channel 1 is left empty on
        purpose — opening to a screen of static is the point. */
-    tvLoadChannels().then(() => { if (!tvOn) tvPowerOn(); });
+    tvLoadChannels().then(() => {
+      /* Build the YouTube player up front rather than on the dial click that
+         first needs it. Creating it costs a script fetch and an iframe
+         handshake, and a channel tuned at the end of that wait has lost the
+         tap that asked for it — which on iOS means losing the sound. */
+      if (Object.keys(tvEntries).some(n => tvEntries[n].type === "youtube")){
+        tvLoadYouTubeApi();
+      }
+      if (!tvOn) tvPowerOn();
+    });
   }
 };
 
