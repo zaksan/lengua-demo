@@ -23,7 +23,9 @@ h1,h2,h3,.logo,.pass-brand{font-family:'Unbounded',sans-serif;}
 /* screens whose layout needs flex — scoped to .active so they stay hidden otherwise */
 .screen.active.intro,
 .screen.active.call-screen,
-.screen.active.fund-screen{display:flex;}
+.screen.active.fund-screen,
+.screen.active.vt-screen,
+.screen.active.beta-screen{display:flex;}
 @keyframes fadein{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
 
 /* ---------- NAV (shared) ---------- */
