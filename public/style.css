@@ -290,6 +290,309 @@ h1,h2,h3,.logo,.pass-brand{font-family:'Unbounded',sans-serif;}
   .vt-input{font-size:26px;letter-spacing:6px;}
 }
 
+/* ---------- BETA: 1965 CONSOLE TV ----------
+   The set is built from nested boxes rather than an image so it stays sharp
+   at any size: wood top, champagne-painted cabinet, recessed bezel, and a
+   tube with a generous corner radius — 1965 CRTs were nearly rounded-square.
+   Sizes hang off --tv-w so the whole console scales from one number. */
+.beta-screen{
+  min-height:100vh;flex-direction:column;align-items:center;justify-content:center;
+  padding:40px 20px;text-align:center;
+  /* A dim room: the tube can't look like it's glowing against white paper. */
+  background:radial-gradient(circle at 50% 35%,#33302b 0%,#211e1a 55%,#151310 100%);
+  color:#EFE7DC;
+}
+.beta-inner{width:100%;max-width:680px;display:flex;flex-direction:column;align-items:center;}
+.beta-screen .vt-kicker{color:#A79C8C;}
+.beta-screen .vt-title{color:#F6EFE4;}
+.beta-screen .vt-sub{color:#A79C8C;max-width:440px;}
+.beta-screen .vt-back{color:#8C8375;}
+.beta-screen .vt-back:hover{color:#F6EFE4;}
+
+.tv{--tv-w:560px;width:100%;max-width:var(--tv-w);display:flex;flex-direction:column;align-items:center;}
+
+/* Wood top overhangs the cabinet on both sides, as it does on the real set. */
+.tv-top{
+  width:calc(100% + 22px);height:26px;border-radius:7px 7px 3px 3px;
+  background:
+    repeating-linear-gradient(90deg,rgba(60,30,12,.16) 0 2px,transparent 2px 9px),
+    linear-gradient(180deg,#8A5A2A 0%,#6E4020 100%);
+  background-color:#7A4A22;
+  box-shadow:0 5px 10px rgba(0,0,0,.45),inset 0 2px 0 rgba(255,220,180,.28);
+}
+
+.tv-cabinet{
+  width:100%;display:flex;gap:0;padding:16px 16px 18px;border-radius:5px;
+  /* Brushed champagne enamel: vertical streaks over a warm silver base. */
+  background:
+    repeating-linear-gradient(90deg,rgba(255,255,255,.05) 0 1px,transparent 1px 4px),
+    linear-gradient(180deg,#D9D4CA 0%,#C3BDB2 45%,#ADA69A 100%);
+  box-shadow:0 22px 44px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.6);
+}
+
+.tv-bezel{
+  flex:1 1 auto;min-width:0;padding:14px;border-radius:12px;
+  background:linear-gradient(160deg,#CFC9BE 0%,#B4ADA2 60%,#9E978C 100%);
+  box-shadow:inset 0 2px 5px rgba(255,255,255,.5),inset 0 -2px 6px rgba(0,0,0,.28);
+}
+
+.tv-screen{
+  position:relative;width:100%;aspect-ratio:4/3;overflow:hidden;
+  border-radius:14% / 18%;background:#0B0C0A;isolation:isolate;
+  box-shadow:
+    inset 0 0 26px rgba(0,0,0,.95),
+    inset 0 0 4px rgba(120,140,120,.35),
+    0 0 0 3px #6F6A60,
+    0 0 0 5px #8E887C;
+}
+/* Everything that can show a picture stacks in the same place. */
+.tv-media,.tv-static{position:absolute;inset:0;width:100%;height:100%;display:none;}
+.tv-media.on,.tv-static.on{display:block;}
+#tv-video{object-fit:cover;background:#0B0C0A;}
+
+/* YouTube is 16:9 and the tube is 4:3, so the frame is widened to 133.3% and
+   pulled left by half the excess — the picture fills the tube and the sides
+   crop, which reads as broadcast rather than as an embed in letterbox bars. */
+.tv-yt-holder{overflow:hidden;}
+.tv-yt-holder iframe{
+  position:absolute;top:0;left:-16.667%;width:133.334%;height:100%;border:0;
+  /* The single most important line here: YouTube's title bar, share button
+     and "Watch on YouTube" overlay only appear on hover, so a frame that
+     can't be hovered never shows any of them. Playback is driven through
+     the IFrame API instead, so nothing is lost by refusing pointer events. */
+  pointer-events:none;
+}
+
+.tv-glass{
+  position:absolute;inset:0;pointer-events:none;border-radius:inherit;
+  background:
+    /* scanlines */
+    repeating-linear-gradient(180deg,rgba(0,0,0,.20) 0 1px,transparent 1px 3px),
+    /* corner vignette, standing in for the tube's curvature */
+    radial-gradient(ellipse at 50% 50%,transparent 55%,rgba(0,0,0,.45) 100%),
+    /* Raking reflection across the glass. Kept faint on purpose: anything
+       stronger reads as haze over the picture rather than as glass. */
+    linear-gradient(128deg,rgba(255,255,255,.09) 0%,rgba(255,255,255,.03) 20%,transparent 42%);
+}
+
+.tv-msg,.tv-osd{
+  position:absolute;font-family:'JetBrains Mono',monospace;pointer-events:none;
+  color:rgba(226,255,226,.82);text-shadow:0 0 9px rgba(150,255,160,.65);
+}
+.tv-msg{
+  left:0;right:0;top:50%;transform:translateY(-50%);text-align:center;
+  font-size:15px;letter-spacing:3px;display:none;
+}
+.tv-msg.on{display:block;}
+.tv-osd{
+  top:7%;right:7%;font-size:17px;font-weight:700;letter-spacing:2px;
+  opacity:0;transition:opacity .35s;
+}
+.tv-osd.on{opacity:1;}
+
+/* Switch-on: a bright line springs open to fill the tube. Switch-off runs the
+   same shape backwards and leaves a dot that fades — the old collapse. */
+.tv-warmup{
+  position:absolute;left:0;right:0;top:50%;height:0;background:#F4FFF4;
+  transform:translateY(-50%);opacity:0;pointer-events:none;border-radius:2px;
+}
+.tv-warmup.warm{animation:tvWarm .5s ease-out forwards;}
+.tv-warmup.collapse{animation:tvCollapse .34s ease-in forwards;}
+@keyframes tvWarm{
+  0%{height:0;opacity:0;}
+  14%{height:2px;opacity:1;box-shadow:0 0 22px 6px rgba(255,255,255,.8);}
+  55%{height:100%;opacity:.42;}
+  100%{height:100%;opacity:0;}
+}
+@keyframes tvCollapse{
+  0%{height:100%;opacity:.55;width:100%;left:0;}
+  55%{height:3px;opacity:1;width:100%;left:0;box-shadow:0 0 20px 5px rgba(255,255,255,.75);}
+  100%{height:3px;opacity:0;width:8px;left:calc(50% - 4px);}
+}
+
+/* ---- right-hand control panel ---- */
+.tv-panel{
+  flex:0 0 108px;margin-left:14px;display:flex;flex-direction:column;align-items:center;
+  gap:10px;padding:10px 8px;border-radius:8px;
+  background:linear-gradient(180deg,#CBC5BA 0%,#B6AFA4 100%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -1px 4px rgba(0,0,0,.2);
+}
+.tv-badge{
+  width:100%;display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:7px 4px;border-radius:5px;background:linear-gradient(180deg,#2E2A25,#191714);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.12);
+}
+.tv-badge-mark{
+  width:15px;height:15px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#F0E4C8,#B98F3C 60%,#7A5C21);
+  box-shadow:0 0 5px rgba(240,214,150,.4);
+}
+.tv-badge-text{font-size:7.5px;letter-spacing:1.4px;color:#E6D9B8;font-weight:700;}
+
+.tv-plate{
+  width:100%;display:flex;flex-direction:column;align-items:center;gap:1px;
+  padding:5px 3px;border-radius:3px;background:linear-gradient(180deg,#E4DFD4,#CDC6BA);
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.12);
+}
+.tv-plate-line{font-size:7px;letter-spacing:1.5px;color:#5C554A;font-weight:700;}
+
+.tv-controls{display:flex;flex-direction:column;align-items:center;gap:14px;margin-top:2px;}
+.tv-control{display:flex;flex-direction:column;align-items:center;gap:5px;}
+.tv-control-label{font-size:7px;letter-spacing:1.6px;color:#575045;font-weight:700;}
+
+/* The ring carries the printed channel numbers; only the knob inside turns. */
+.tv-dial-ring{
+  position:relative;width:78px;height:78px;border-radius:50%;
+  background:radial-gradient(circle at 50% 50%,#C7C0B4 62%,#B0A99D 63%,#C9C2B6 100%);
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.18),inset 0 2px 4px rgba(0,0,0,.22);
+  display:flex;align-items:center;justify-content:center;
+}
+.tv-dial-tick{
+  position:absolute;top:50%;left:50%;width:12px;margin:-5px 0 0 -6px;
+  font-size:7px;font-weight:700;color:#4C463C;text-align:center;
+  pointer-events:none;transition:color .18s;
+}
+/* A programmed channel gets an underline, so you can see at a glance which
+   positions have something on them without turning the dial through all 13. */
+.tv-dial-tick.has{color:#2B2620;text-decoration:underline;text-underline-offset:1px;}
+.tv-dial-tick.active{color:var(--pink-dark);}
+
+.tv-dial{
+  position:relative;width:50px;height:50px;border-radius:50%;cursor:pointer;
+  background:
+    repeating-conic-gradient(from 0deg,rgba(0,0,0,.16) 0 2deg,transparent 2deg 7deg),
+    radial-gradient(circle at 38% 30%,#6A625A 0%,#3D3832 55%,#211E1A 100%);
+  box-shadow:0 3px 7px rgba(0,0,0,.5),inset 0 1px 1px rgba(255,255,255,.22);
+  /* Snappy overshoot, so a click feels like a detent rather than a slide. */
+  transition:transform .34s cubic-bezier(.34,1.56,.64,1);
+  touch-action:none;
+}
+.tv-dial:focus-visible{outline:2px solid var(--pink);outline-offset:3px;}
+.tv-dial.dragging{transition:none;cursor:grabbing;}
+.tv-dial-grip{
+  position:absolute;inset:9px;border-radius:50%;
+  background:linear-gradient(160deg,#575049,#2B2723);
+  box-shadow:inset 0 1px 1px rgba(255,255,255,.16);
+}
+.tv-dial-pointer{
+  position:absolute;top:3px;left:50%;width:3px;height:13px;margin-left:-1.5px;
+  border-radius:2px;background:linear-gradient(180deg,#F6EEDC,#C9B98F);
+  box-shadow:0 0 4px rgba(255,240,200,.5);
+}
+
+.tv-power{
+  width:38px;height:38px;border-radius:50%;border:none;cursor:pointer;padding:0;
+  background:radial-gradient(circle at 38% 30%,#6A625A 0%,#3D3832 55%,#211E1A 100%);
+  box-shadow:0 3px 7px rgba(0,0,0,.5),inset 0 1px 1px rgba(255,255,255,.22);
+  display:flex;align-items:center;justify-content:center;transition:transform .12s;
+}
+.tv-power:active{transform:translateY(1px);}
+.tv-power:focus-visible{outline:2px solid var(--pink);outline-offset:3px;}
+.tv-power-glyph{
+  width:11px;height:11px;border-radius:50%;background:#6E665C;
+  box-shadow:inset 0 1px 2px rgba(0,0,0,.6);transition:background .3s,box-shadow .3s;
+}
+.tv-power[aria-pressed="true"] .tv-power-glyph{
+  background:#FF9E3D;box-shadow:0 0 9px 3px rgba(255,150,50,.65);
+}
+
+.tv-grille{
+  width:100%;height:64px;margin-top:auto;border-radius:4px;
+  background:
+    repeating-linear-gradient(90deg,#9A9388 0 2px,#736D63 2px 3px,#8E877C 3px 5px);
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.16),inset 0 2px 4px rgba(0,0,0,.3);
+}
+
+/* Splayed legs with brass feet, angled out the way the originals were. */
+.tv-legs{width:100%;display:flex;justify-content:space-between;padding:0 42px;}
+.tv-leg{
+  width:13px;height:52px;border-radius:0 0 4px 4px;
+  background:linear-gradient(180deg,#6E4320 0%,#53321A 100%);
+  box-shadow:0 5px 8px rgba(0,0,0,.4);
+}
+.tv-leg:first-child{transform:rotate(5deg);transform-origin:top center;}
+.tv-leg:last-child{transform:rotate(-5deg);transform-origin:top center;}
+.tv-leg::after{
+  content:"";display:block;margin:52px auto 0;width:11px;height:5px;border-radius:0 0 3px 3px;
+  background:linear-gradient(180deg,#C9932F,#8A6420);
+}
+
+.beta-actions{
+  margin-top:30px;display:flex;flex-direction:column;align-items:center;gap:10px;
+}
+.beta-actions .btn-outline{background:transparent;color:#F0E8DC;border-color:#5D564C;}
+.beta-actions .btn-outline:hover{border-color:#A79C8C;}
+.beta-hint{font-size:12px;color:#8C8375;}
+
+/* ---------- MODAL ---------- */
+.modal{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:20px;}
+.modal[hidden]{display:none;}
+.modal-backdrop{position:absolute;inset:0;background:rgba(15,12,10,.68);backdrop-filter:blur(3px);}
+.modal-card{
+  position:relative;width:100%;max-width:440px;max-height:88vh;overflow-y:auto;
+  background:var(--paper);border-radius:16px;padding:22px;text-align:left;
+  box-shadow:0 26px 60px rgba(0,0,0,.5);
+}
+.modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.modal-title{font-size:19px;font-weight:600;color:var(--ink);}
+.modal-x{
+  background:none;border:none;font-size:26px;line-height:1;color:var(--muted);
+  cursor:pointer;padding:0 4px;
+}
+.modal-x:hover{color:var(--ink);}
+
+.field{display:block;margin-bottom:14px;}
+.field-label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px;}
+.field-input{
+  width:100%;padding:11px 12px;border:1.5px solid var(--line);border-radius:10px;
+  background:#fff;color:var(--ink);font-family:'Inter',sans-serif;font-size:14px;
+}
+.field-input:focus{outline:none;border-color:var(--pink);}
+.field-note{font-size:12px;color:var(--muted);margin-bottom:14px;}
+
+.modal-tabs{display:flex;gap:6px;margin-bottom:16px;background:#F1EAE1;padding:4px;border-radius:10px;}
+.modal-tab{
+  flex:1;padding:9px 8px;border:none;border-radius:7px;background:transparent;cursor:pointer;
+  font-family:'Inter',sans-serif;font-size:13px;font-weight:600;color:var(--muted);
+}
+.modal-tab.active{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12);}
+.tab-panel[hidden]{display:none;}
+
+.progress{height:8px;background:var(--line);border-radius:5px;overflow:hidden;margin-bottom:12px;}
+.progress-bar{height:100%;width:0;background:var(--pink);transition:width .18s;}
+
+.yt-preview{
+  display:flex;gap:10px;align-items:center;margin-bottom:14px;padding:8px;
+  background:#fff;border:1px solid var(--line);border-radius:10px;
+}
+.yt-preview[hidden]{display:none;}
+.yt-thumb{width:88px;height:50px;object-fit:cover;border-radius:6px;flex-shrink:0;background:#ddd;}
+.yt-title{font-size:12.5px;color:var(--ink);line-height:1.4;}
+
+.modal-msg{font-size:13px;margin:10px 0 0;min-height:18px;}
+.modal-msg.err{color:var(--pink-dark);}
+.modal-msg.ok{color:var(--success);}
+
+.modal-list{margin-top:18px;border-top:1px solid var(--line);padding-top:14px;}
+.modal-list-head{font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px;}
+.ch-list{list-style:none;display:flex;flex-direction:column;gap:6px;}
+.ch-row{
+  display:flex;align-items:center;gap:10px;padding:8px 10px;background:#fff;
+  border:1px solid var(--line);border-radius:9px;
+}
+.ch-num{
+  font-family:'JetBrains Mono',monospace;font-weight:700;font-size:12px;
+  color:var(--pink-dark);flex-shrink:0;width:38px;
+}
+.ch-name{flex:1;min-width:0;font-size:12.5px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ch-kind{font-size:10px;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);flex-shrink:0;}
+.ch-clear{
+  background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;
+  line-height:1;padding:2px 4px;flex-shrink:0;
+}
+.ch-clear:hover{color:var(--pink-dark);}
+.ch-empty{font-size:12.5px;color:var(--muted);}
+
 /* ---------- RESPONSIVE ---------- */
 @media (max-width:760px){
   .nav{padding:14px 14px;gap:10px;}
@@ -310,4 +613,29 @@ h1,h2,h3,.logo,.pass-brand{font-family:'Unbounded',sans-serif;}
   .tutor-side{width:100%;text-align:left;}
   .call-grid{grid-template-columns:1fr;}
   .intro-line{font-size:19px;}
+
+  /* Two live entry points now share the row, so they need to be tighter
+     than the single "Video test" link was. */
+  .navlink-action{font-size:12px;}
+  .navlinks{gap:12px;}
+
+  /* Shrink the control column hard: at 360px the tube is what matters, and
+     a full-width panel would squeeze it down to a postage stamp. */
+  .tv-cabinet{padding:10px 10px 12px;}
+  .tv-bezel{padding:8px;}
+  .tv-panel{flex-basis:66px;margin-left:9px;padding:7px 5px;gap:7px;}
+  .tv-badge-text{font-size:6px;letter-spacing:1px;}
+  .tv-badge-mark{width:11px;height:11px;}
+  .tv-plate-line{font-size:5.5px;letter-spacing:1px;}
+  .tv-dial-ring{width:56px;height:56px;}
+  .tv-dial{width:36px;height:36px;}
+  .tv-dial-pointer{height:9px;}
+  .tv-dial-tick{font-size:5.5px;}
+  .tv-power{width:29px;height:29px;}
+  .tv-grille{height:38px;}
+  .tv-legs{padding:0 26px;}
+  .tv-leg{height:38px;}
+  .tv-leg::after{margin-top:38px;}
+  .tv-osd{font-size:13px;}
+  .tv-msg{font-size:12px;letter-spacing:2px;}
 }

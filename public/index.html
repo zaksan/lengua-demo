@@ -39,6 +39,7 @@
       <span>Become a tutor</span>
       <span>Our progress</span>
       <span class="navlink-action vt-entry">Video test</span>
+      <span class="navlink-action beta-entry">Beta features</span>
     </nav>
     <div class="navright">
       <span class="lang">English, USD</span>
@@ -80,6 +81,7 @@
       <span>Become a tutor</span>
       <span>Our progress</span>
       <span class="navlink-action vt-entry">Video test</span>
+      <span class="navlink-action beta-entry">Beta features</span>
     </nav>
     <div class="navright">
       <span class="lang">English, USD</span>
@@ -280,9 +282,136 @@
   </div>
 </section>
 
+<!-- SCREEN 9: BETA — CONSOLE TV -->
+<section id="screen-beta" class="screen beta-screen">
+  <div class="beta-inner">
+    <span class="vt-kicker">Beta features</span>
+    <h2 class="vt-title">Channel surfing</h2>
+    <p class="vt-sub">Thirteen channels on a 1965 console. Load them with your own clips, or paste a YouTube link for the long stuff.</p>
+
+    <div class="tv">
+      <div class="tv-top"></div>
+      <div class="tv-cabinet">
+        <div class="tv-bezel">
+          <div class="tv-screen" id="tv-screen">
+            <video id="tv-video" class="tv-media" playsinline webkit-playsinline></video>
+            <div class="tv-media tv-yt-holder" id="tv-yt-holder"><div id="tv-yt"></div></div>
+            <canvas class="tv-static" id="tv-static"></canvas>
+            <div class="tv-msg" id="tv-msg"></div>
+            <div class="tv-osd" id="tv-osd"></div>
+            <div class="tv-warmup" id="tv-warmup"></div>
+            <div class="tv-glass"></div>
+          </div>
+        </div>
+
+        <div class="tv-panel">
+          <div class="tv-badge">
+            <span class="tv-badge-mark"></span>
+            <span class="tv-badge-text">RCA VICTOR</span>
+          </div>
+
+          <div class="tv-plate">
+            <span class="tv-plate-line">NEW VISTA</span>
+            <span class="tv-plate-line">COLOR TV</span>
+          </div>
+
+          <div class="tv-controls">
+            <div class="tv-control">
+              <div class="tv-dial-ring" id="tv-dial-ring">
+                <div class="tv-dial" id="tv-dial" role="slider" tabindex="0"
+                     aria-label="Channel selector" aria-valuemin="1" aria-valuemax="13"
+                     aria-valuenow="1" aria-valuetext="Channel 1">
+                  <span class="tv-dial-grip"></span>
+                  <span class="tv-dial-pointer"></span>
+                </div>
+              </div>
+              <span class="tv-control-label">CHANNEL</span>
+            </div>
+
+            <div class="tv-control">
+              <button class="tv-power" id="tv-power" aria-pressed="false" aria-label="Power">
+                <span class="tv-power-glyph"></span>
+              </button>
+              <span class="tv-control-label">POWER</span>
+            </div>
+          </div>
+
+          <div class="tv-grille"></div>
+        </div>
+      </div>
+      <div class="tv-legs">
+        <span class="tv-leg"></span>
+        <span class="tv-leg"></span>
+      </div>
+    </div>
+
+    <div class="beta-actions">
+      <button class="btn-outline" id="tv-program">Program channels</button>
+      <span class="beta-hint">Turn it on, then click the dial to change channel.</span>
+    </div>
+
+    <button class="vt-back" id="beta-back">← Back to Lengua</button>
+  </div>
+</section>
+
+<!-- PROGRAM CHANNELS MODAL -->
+<div class="modal" id="tv-modal" hidden>
+  <div class="modal-backdrop" data-tv-close></div>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="tv-modal-title">
+    <div class="modal-head">
+      <h3 class="modal-title" id="tv-modal-title">Program channels</h3>
+      <button class="modal-x" id="tv-modal-x" aria-label="Close">×</button>
+    </div>
+
+    <label class="field">
+      <span class="field-label">Channel</span>
+      <select class="field-input" id="tv-ch-select"></select>
+    </label>
+
+    <div class="modal-tabs" role="tablist">
+      <button class="modal-tab active" data-tv-tab="upload" role="tab" aria-selected="true">Upload a file</button>
+      <button class="modal-tab" data-tv-tab="youtube" role="tab" aria-selected="false">YouTube link</button>
+    </div>
+
+    <div class="tab-panel" data-tv-panel="upload">
+      <label class="field">
+        <span class="field-label">Video file</span>
+        <input class="field-input" type="file" id="tv-file" accept="video/*">
+      </label>
+      <p class="field-note">Up to 500 MB. Anything bigger belongs on YouTube.</p>
+      <div class="progress" id="tv-progress" hidden>
+        <div class="progress-bar" id="tv-progress-bar"></div>
+      </div>
+      <button class="btn-primary btn-block" id="tv-do-upload">Upload to channel</button>
+    </div>
+
+    <div class="tab-panel" data-tv-panel="youtube" hidden>
+      <label class="field">
+        <span class="field-label">YouTube link</span>
+        <input class="field-input" type="url" id="tv-yt-url" autocomplete="off"
+               placeholder="https://www.youtube.com/watch?v=…">
+      </label>
+      <div class="yt-preview" id="tv-yt-preview" hidden>
+        <img class="yt-thumb" id="tv-yt-thumb" alt="">
+        <span class="yt-title" id="tv-yt-title"></span>
+      </div>
+      <p class="field-note">Any length, and it costs us no storage at all.</p>
+      <button class="btn-primary btn-block" id="tv-do-yt">Assign to channel</button>
+    </div>
+
+    <p class="modal-msg" id="tv-modal-msg"></p>
+
+    <div class="modal-list">
+      <div class="modal-list-head">Programmed channels</div>
+      <ul class="ch-list" id="tv-ch-list"></ul>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script src="app.js"></script>
 <script src="videotest.js"></script>
+<script src="beta.js"></script>
 </body>
 </html>

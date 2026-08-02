@@ -3,5 +3,9 @@ node_modules/
 npm-debug.log*
 .env
 
+# Videos uploaded to the beta TV, plus the channel map. Local scratch only —
+# in production these live on the Railway volume, not in the repo.
+uploads/
+
 # Machine-local Claude Code settings (launch.json is shared, this isn't)
 .claude/settings.local.json

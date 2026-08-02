@@ -1,7 +1,9 @@
 # Lengua — demo
 
 A clickable 5-screen demo: intro reel → landing page → tutor list → video
-call → travel fund.
+call → travel fund. Plus two extras in the nav: a real 2-person video call
+("Video test") and a 1965 console TV with 13 programmable channels
+("Beta features").
 
 ## Deploy to Railway (get your URL)
 
@@ -27,6 +29,22 @@ call → travel fund.
 
 Either way, no config files are needed beyond what's already here —
 Railway's Node builder picks up `package.json` and `server.js` on its own.
+
+## Storage for the beta TV (do this, or uploads disappear)
+
+Railway containers get a fresh filesystem on every redeploy. Without a
+volume the TV still works, but every uploaded video and channel assignment
+is wiped the next time you deploy. YouTube channels survive either way,
+since those are just a video id.
+
+1. Railway dashboard → your service → **Variables** → add
+   `UPLOAD_DIR` = `/data`
+2. Same service → **Settings → Volumes** → **New Volume**, mount path `/data`
+3. Redeploy.
+
+Videos then live in `/data/videos` and the channel map in
+`/data/channels.json`, both of which persist across deploys. Locally, with
+no `UPLOAD_DIR` set, everything goes to `./uploads/` (git-ignored).
 
 ## Running it locally first (optional)
 
@@ -55,3 +73,27 @@ Text on the landing page and tutor card lives directly in
 
 The photo used for the tutor is `public/assets/zacarias.jpg` — swap in a
 different file with the same name to change it.
+
+## The beta TV
+
+Reachable from the "Beta features" nav link, or directly at `/#tv`.
+
+- **Power** turns the set on with a CRT warm-up; off collapses the picture
+  to a dot.
+- **The dial** is a real 13-position rotary knob. Click it to advance a
+  channel, drag it to spin straight to one, or focus it and use the arrow
+  keys. Underlined numbers on the ring are channels that have something on
+  them; empty ones show static.
+- **Program channels** opens the uploader. Two ways to fill a channel:
+  upload a video file (up to 500 MB), or paste a YouTube link of any
+  length. YouTube costs no storage, so that's the better option for
+  anything long.
+
+YouTube channels play with all of YouTube's own controls and overlays
+suppressed, so the tube shows nothing but picture. Two things are outside
+our control: YouTube may run an ad before a video, and some videos have
+embedding disabled by their owner — those fall back to static rather than
+showing a broken frame.
+
+The upload size cap is `MAX_UPLOAD_BYTES` near the top of `server.js` if
+you want it different.

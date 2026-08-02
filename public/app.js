@@ -18,7 +18,7 @@ const CONFIG = {
 /* ============================================================ */
 
 const screens = ["intro", "landing", "list", "call", "fund",
-                 "vtlobby", "vtcreate", "vtjoin", "vtcall"];
+                 "vtlobby", "vtcreate", "vtjoin", "vtcall", "beta"];
 function showScreen(name){
   screens.forEach(s => {
     document.getElementById("screen-" + s).classList.toggle("active", s === name);

@@ -1,6 +1,8 @@
 const express = require("express");
 const http = require("http");
 const path = require("path");
+const fs = require("fs");
+const multer = require("multer");
 const { WebSocketServer } = require("ws");
 
 const app = express();
@@ -36,6 +38,208 @@ app.post("/api/notify", express.json(), (req, res) => {
   console.log("[pushover:stub] would send lesson code " + code);
   res.json({ ok: true, stubbed: true });
 });
+
+/* ============================================================
+   BETA: TV CHANNELS
+
+   Thirteen channels, each holding either an uploaded video file
+   or a YouTube link. Uploads land on disk; YouTube channels are
+   just an id in the metadata, which is how a 2-hour movie gets
+   on the set without touching our storage at all.
+
+   UPLOAD_DIR should point at a Railway volume mount (/data) in
+   production. Without one the container's filesystem is wiped
+   on every redeploy and the channels come back empty.
+   ============================================================ */
+const CHANNEL_COUNT = 13;
+const MAX_UPLOAD_BYTES = 500 * 1024 * 1024;
+
+const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(__dirname, "uploads");
+const VIDEO_DIR = path.join(UPLOAD_DIR, "videos");
+const CHANNELS_FILE = path.join(UPLOAD_DIR, "channels.json");
+
+fs.mkdirSync(VIDEO_DIR, { recursive: true });
+
+function readChannels() {
+  try {
+    const parsed = JSON.parse(fs.readFileSync(CHANNELS_FILE, "utf8"));
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch (e) {
+    return {}; // absent or corrupt reads as "nothing programmed yet"
+  }
+}
+
+// Write to a sibling temp file and rename: rename is atomic on the same
+// filesystem, so a crash mid-write can't leave a half-written channels.json
+// that would read back as empty and wipe every channel.
+function writeChannels(channels) {
+  const tmp = CHANNELS_FILE + ".tmp";
+  fs.writeFileSync(tmp, JSON.stringify(channels, null, 2));
+  fs.renameSync(tmp, CHANNELS_FILE);
+}
+
+function parseChannel(value) {
+  const n = Number(value);
+  return Number.isInteger(n) && n >= 1 && n <= CHANNEL_COUNT ? n : null;
+}
+
+// Removes whatever a channel was holding. Only uploads leave a file behind;
+// clearing a YouTube channel is pure metadata.
+function clearChannel(channels, n) {
+  const existing = channels[String(n)];
+  if (existing && existing.type === "upload" && existing.file) {
+    try {
+      fs.unlinkSync(path.join(VIDEO_DIR, path.basename(existing.file)));
+    } catch (e) {}
+  }
+  delete channels[String(n)];
+}
+
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => cb(null, VIDEO_DIR),
+    // Never trust the client's filename — it can contain path separators.
+    // The channel is already validated by the time multer runs.
+    filename: (req, file, cb) => {
+      const ext = (path.extname(file.originalname) || ".mp4").toLowerCase().slice(0, 10);
+      const safeExt = /^\.[a-z0-9]+$/.test(ext) ? ext : ".mp4";
+      cb(null, "ch" + req.params.n + "-" + Date.now() + safeExt);
+    }
+  }),
+  limits: { fileSize: MAX_UPLOAD_BYTES, files: 1 },
+  fileFilter: (req, file, cb) => {
+    if (!String(file.mimetype || "").startsWith("video/")) {
+      return cb(new Error("not-video"));
+    }
+    cb(null, true);
+  }
+});
+
+app.get("/api/channels", (req, res) => {
+  res.json({ ok: true, count: CHANNEL_COUNT, channels: readChannels() });
+});
+
+app.post("/api/channels/:n/video", (req, res) => {
+  const n = parseChannel(req.params.n);
+  if (!n) return res.status(400).json({ ok: false, error: "bad-channel" });
+
+  upload.single("video")(req, res, err => {
+    if (err) {
+      const error = err.code === "LIMIT_FILE_SIZE" ? "too-large"
+                  : err.message === "not-video" ? "not-video"
+                  : "upload-failed";
+      return res.status(400).json({ ok: false, error, maxBytes: MAX_UPLOAD_BYTES });
+    }
+    if (!req.file) return res.status(400).json({ ok: false, error: "no-file" });
+
+    const channels = readChannels();
+    clearChannel(channels, n); // frees the old file before the new one takes the slot
+    channels[String(n)] = {
+      type: "upload",
+      file: req.file.filename,
+      originalName: req.file.originalname,
+      mime: req.file.mimetype,
+      size: req.file.size,
+      addedAt: new Date().toISOString()
+    };
+    writeChannels(channels);
+    console.log("[tv] channel " + n + " <- upload " + req.file.filename);
+    res.json({ ok: true, channel: n, entry: channels[String(n)] });
+  });
+});
+
+/* Accepts anything someone might realistically paste: a full watch URL, a
+   youtu.be short link, a Shorts or embed path, or the bare 11-char id. */
+function parseYouTube(input) {
+  const raw = String(input || "").trim();
+  if (!raw) return null;
+  if (/^[A-Za-z0-9_-]{11}$/.test(raw)) return { videoId: raw, start: 0 };
+
+  let url;
+  try {
+    url = new URL(/^https?:\/\//i.test(raw) ? raw : "https://" + raw);
+  } catch (e) {
+    return null;
+  }
+
+  const host = url.hostname.replace(/^(www|m)\./, "");
+  let id = null;
+  if (host === "youtu.be") {
+    id = url.pathname.slice(1).split("/")[0];
+  } else if (host === "youtube.com" || host === "youtube-nocookie.com") {
+    if (url.pathname === "/watch") {
+      id = url.searchParams.get("v");
+    } else {
+      const match = url.pathname.match(/^\/(?:embed|shorts|v|live)\/([^/?#]+)/);
+      if (match) id = match[1];
+    }
+  }
+
+  if (!id || !/^[A-Za-z0-9_-]{11}$/.test(id)) return null;
+  return { videoId: id, start: parseStart(url.searchParams.get("t") || url.searchParams.get("start")) };
+}
+
+// YouTube writes timestamps as either raw seconds or 1h2m3s.
+function parseStart(value) {
+  if (!value) return 0;
+  const text = String(value).trim();
+  if (/^\d+$/.test(text)) return Number(text);
+  const match = text.match(/^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?$/i);
+  if (!match) return 0;
+  return Number(match[1] || 0) * 3600 + Number(match[2] || 0) * 60 + Number(match[3] || 0);
+}
+
+/* oEmbed gives us the title with no API key and no quota. It's a nicety, so
+   a failure here must not sink the request — an untitled channel still plays. */
+async function fetchYouTubeTitle(videoId) {
+  try {
+    const target = "https://www.youtube.com/oembed?format=json&url=" +
+      encodeURIComponent("https://www.youtube.com/watch?v=" + videoId);
+    const res = await fetch(target, { signal: AbortSignal.timeout(5000) });
+    if (!res.ok) return "";
+    const data = await res.json();
+    return String(data.title || "").slice(0, 200);
+  } catch (e) {
+    return "";
+  }
+}
+
+app.post("/api/channels/:n/youtube", express.json(), async (req, res) => {
+  const n = parseChannel(req.params.n);
+  if (!n) return res.status(400).json({ ok: false, error: "bad-channel" });
+
+  const parsed = parseYouTube(req.body && req.body.url);
+  if (!parsed) return res.status(400).json({ ok: false, error: "bad-url" });
+
+  const title = await fetchYouTubeTitle(parsed.videoId);
+
+  const channels = readChannels();
+  clearChannel(channels, n);
+  channels[String(n)] = {
+    type: "youtube",
+    videoId: parsed.videoId,
+    title,
+    start: parsed.start,
+    addedAt: new Date().toISOString()
+  };
+  writeChannels(channels);
+  console.log("[tv] channel " + n + " <- youtube " + parsed.videoId);
+  res.json({ ok: true, channel: n, entry: channels[String(n)] });
+});
+
+app.delete("/api/channels/:n", (req, res) => {
+  const n = parseChannel(req.params.n);
+  if (!n) return res.status(400).json({ ok: false, error: "bad-channel" });
+  const channels = readChannels();
+  clearChannel(channels, n);
+  writeChannels(channels);
+  res.json({ ok: true, channel: n });
+});
+
+// Only the videos subdirectory is exposed — channels.json lives one level up
+// in UPLOAD_DIR precisely so it can't be fetched here. express.static handles
+// Range requests, which is what lets the player seek.
+app.use("/media", express.static(VIDEO_DIR, { maxAge: "1h" }));
 
 // Must sit above the catch-all: without it a typo'd /api/... path returns
 // index.html with a 200, and the client's res.json() fails with a baffling
