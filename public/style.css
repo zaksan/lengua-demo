@@ -304,14 +304,14 @@ h1,h2,h3,.logo,.pass-brand{font-family:'Unbounded',sans-serif;}
   background:radial-gradient(circle at 50% 35%,#33302b 0%,#211e1a 55%,#151310 100%);
   color:#EFE7DC;
 }
-.beta-inner{width:100%;max-width:680px;display:flex;flex-direction:column;align-items:center;}
+.beta-inner{width:100%;max-width:880px;display:flex;flex-direction:column;align-items:center;}
 .beta-screen .vt-kicker{color:#A79C8C;}
 .beta-screen .vt-title{color:#F6EFE4;}
 .beta-screen .vt-sub{color:#A79C8C;max-width:440px;}
 .beta-screen .vt-back{color:#8C8375;}
 .beta-screen .vt-back:hover{color:#F6EFE4;}
 
-.tv{--tv-w:560px;width:100%;max-width:var(--tv-w);display:flex;flex-direction:column;align-items:center;}
+.tv{--tv-w:800px;width:100%;max-width:var(--tv-w);display:flex;flex-direction:column;align-items:center;}
 
 /* Wood top overhangs the cabinet on both sides, as it does on the real set. */
 .tv-top{
@@ -323,8 +323,10 @@ h1,h2,h3,.logo,.pass-brand{font-family:'Unbounded',sans-serif;}
   box-shadow:0 5px 10px rgba(0,0,0,.45),inset 0 2px 0 rgba(255,220,180,.28);
 }
 
+/* Controls sit under the tube rather than beside it, which hands the full
+   cabinet width back to the picture. */
 .tv-cabinet{
-  width:100%;display:flex;gap:0;padding:16px 16px 18px;border-radius:5px;
+  width:100%;display:flex;flex-direction:column;padding:16px 16px 14px;border-radius:5px;
   /* Brushed champagne enamel: vertical streaks over a warm silver base. */
   background:
     repeating-linear-gradient(90deg,rgba(255,255,255,.05) 0 1px,transparent 1px 4px),
@@ -333,14 +335,16 @@ h1,h2,h3,.logo,.pass-brand{font-family:'Unbounded',sans-serif;}
 }
 
 .tv-bezel{
-  flex:1 1 auto;min-width:0;padding:14px;border-radius:12px;
+  width:100%;padding:14px;border-radius:12px;
   background:linear-gradient(160deg,#CFC9BE 0%,#B4ADA2 60%,#9E978C 100%);
   box-shadow:inset 0 2px 5px rgba(255,255,255,.5),inset 0 -2px 6px rgba(0,0,0,.28);
 }
 
+/* 3:2 rather than a strict 4:3 — wide enough that 16:9 content loses only a
+   sliver off the sides, still square enough to read as a vintage set. */
 .tv-screen{
-  position:relative;width:100%;aspect-ratio:4/3;overflow:hidden;
-  border-radius:14% / 18%;background:#0B0C0A;isolation:isolate;
+  position:relative;width:100%;aspect-ratio:3/2;overflow:hidden;
+  border-radius:11% / 16%;background:#0B0C0A;isolation:isolate;
   box-shadow:
     inset 0 0 26px rgba(0,0,0,.95),
     inset 0 0 4px rgba(120,140,120,.35),
@@ -350,14 +354,21 @@ h1,h2,h3,.logo,.pass-brand{font-family:'Unbounded',sans-serif;}
 /* Everything that can show a picture stacks in the same place. */
 .tv-media,.tv-static{position:absolute;inset:0;width:100%;height:100%;display:none;}
 .tv-media.on,.tv-static.on{display:block;}
+/* Landscape fills the tube edge to edge, losing only a sliver off each side. */
 #tv-video{object-fit:cover;background:#0B0C0A;}
+/* Video shot upright on a phone is much taller than the tube, so cover would
+   slice the top and bottom off. Those are fitted whole instead, with black
+   down the sides — exactly what a real set does with the wrong shape. */
+#tv-video.portrait{object-fit:contain;}
 
-/* YouTube is 16:9 and the tube is 4:3, so the frame is widened to 133.3% and
-   pulled left by half the excess — the picture fills the tube and the sides
-   crop, which reads as broadcast rather than as an embed in letterbox bars. */
+/* The YouTube player is always 16:9, so it's sized to the tube's height and
+   widened to 118.5% (16/9 ÷ 3/2), with half the excess pulled off to the left.
+   That crops the sides of landscape video so it fills the tube, and it handles
+   Shorts for free: an upright video occupies the player's full height already,
+   so all that gets clipped is YouTube's own black side padding. */
 .tv-yt-holder{overflow:hidden;}
 .tv-yt-holder iframe{
-  position:absolute;top:0;left:-16.667%;width:133.334%;height:100%;border:0;
+  position:absolute;top:0;left:-9.2593%;width:118.519%;height:100%;border:0;
   /* The single most important line here: YouTube's title bar, share button
      and "Watch on YouTube" overlay only appear on hover, so a frame that
      can't be hovered never shows any of them. Playback is driven through
@@ -412,33 +423,28 @@ h1,h2,h3,.logo,.pass-brand{font-family:'Unbounded',sans-serif;}
   100%{height:3px;opacity:0;width:8px;left:calc(50% - 4px);}
 }
 
-/* ---- right-hand control panel ---- */
-.tv-panel{
-  flex:0 0 108px;margin-left:14px;display:flex;flex-direction:column;align-items:center;
-  gap:10px;padding:10px 8px;border-radius:8px;
+/* ---- control deck along the bottom ---- */
+.tv-deck{
+  width:100%;margin-top:12px;display:flex;align-items:center;gap:16px;
+  padding:10px 14px;border-radius:8px;
   background:linear-gradient(180deg,#CBC5BA 0%,#B6AFA4 100%);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -1px 4px rgba(0,0,0,.2);
 }
+.tv-brandblock{display:flex;flex-direction:column;align-items:flex-start;gap:5px;flex-shrink:0;}
 .tv-badge{
-  width:100%;display:flex;flex-direction:column;align-items:center;gap:3px;
-  padding:7px 4px;border-radius:5px;background:linear-gradient(180deg,#2E2A25,#191714);
+  display:flex;align-items:center;gap:6px;
+  padding:5px 9px;border-radius:5px;background:linear-gradient(180deg,#2E2A25,#191714);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.12);
 }
 .tv-badge-mark{
-  width:15px;height:15px;border-radius:50%;
+  width:13px;height:13px;border-radius:50%;flex-shrink:0;
   background:radial-gradient(circle at 35% 30%,#F0E4C8,#B98F3C 60%,#7A5C21);
   box-shadow:0 0 5px rgba(240,214,150,.4);
 }
-.tv-badge-text{font-size:7.5px;letter-spacing:1.4px;color:#E6D9B8;font-weight:700;}
+.tv-badge-text{font-size:8px;letter-spacing:1.4px;color:#E6D9B8;font-weight:700;white-space:nowrap;}
+.tv-plate-line{font-size:7px;letter-spacing:1.5px;color:#5C554A;font-weight:700;white-space:nowrap;}
 
-.tv-plate{
-  width:100%;display:flex;flex-direction:column;align-items:center;gap:1px;
-  padding:5px 3px;border-radius:3px;background:linear-gradient(180deg,#E4DFD4,#CDC6BA);
-  box-shadow:inset 0 0 0 1px rgba(0,0,0,.12);
-}
-.tv-plate-line{font-size:7px;letter-spacing:1.5px;color:#5C554A;font-weight:700;}
-
-.tv-controls{display:flex;flex-direction:column;align-items:center;gap:14px;margin-top:2px;}
+.tv-controls{display:flex;align-items:flex-start;gap:20px;flex-shrink:0;}
 .tv-control{display:flex;flex-direction:column;align-items:center;gap:5px;}
 .tv-control-label{font-size:7px;letter-spacing:1.6px;color:#575045;font-weight:700;}
 
@@ -498,8 +504,9 @@ h1,h2,h3,.logo,.pass-brand{font-family:'Unbounded',sans-serif;}
   background:#FF9E3D;box-shadow:0 0 9px 3px rgba(255,150,50,.65);
 }
 
+/* Takes whatever width is left between the badge and the knobs. */
 .tv-grille{
-  width:100%;height:64px;margin-top:auto;border-radius:4px;
+  flex:1 1 auto;min-width:0;height:52px;border-radius:4px;
   background:
     repeating-linear-gradient(90deg,#9A9388 0 2px,#736D63 2px 3px,#8E877C 3px 5px);
   box-shadow:inset 0 0 0 1px rgba(0,0,0,.16),inset 0 2px 4px rgba(0,0,0,.3);
@@ -621,21 +628,23 @@ h1,h2,h3,.logo,.pass-brand{font-family:'Unbounded',sans-serif;}
   .navlink-action{font-size:12px;}
   .navlinks{gap:12px;}
 
-  /* Shrink the control column hard: at 360px the tube is what matters, and
-     a full-width panel would squeeze it down to a postage stamp. */
-  .tv-cabinet{padding:10px 10px 12px;}
-  .tv-bezel{padding:8px;}
-  .tv-panel{flex-basis:66px;margin-left:9px;padding:7px 5px;gap:7px;}
+  /* The deck keeps its row on a phone; only the decoration gives way, so the
+     knobs stay big enough to hit with a thumb. */
+  .tv-cabinet{padding:9px 9px 10px;}
+  .tv-bezel{padding:7px;}
+  .tv-deck{gap:9px;padding:8px 9px;margin-top:9px;}
+  .tv-badge{padding:4px 6px;gap:4px;}
   .tv-badge-text{font-size:6px;letter-spacing:1px;}
-  .tv-badge-mark{width:11px;height:11px;}
+  .tv-badge-mark{width:10px;height:10px;}
   .tv-plate-line{font-size:5.5px;letter-spacing:1px;}
-  .tv-dial-ring{width:56px;height:56px;}
-  .tv-dial{width:36px;height:36px;}
+  .tv-controls{gap:12px;}
+  .tv-dial-ring{width:58px;height:58px;}
+  .tv-dial{width:37px;height:37px;}
   .tv-dial-pointer{height:9px;}
   .tv-dial-tick{font-size:5.5px;}
-  .tv-power{width:29px;height:29px;}
-  .tv-grille{height:38px;}
-  .tv-legs{padding:0 26px;}
+  .tv-power{width:30px;height:30px;}
+  .tv-grille{height:36px;}
+  .tv-legs{padding:0 30px;}
   .tv-leg{height:38px;}
   .tv-leg::after{margin-top:38px;}
   .tv-osd{font-size:13px;}

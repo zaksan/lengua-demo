@@ -220,6 +220,18 @@ function tvStopSources(){
   tvYtHold.classList.remove("on");
 }
 
+/* Video shot upright on a phone is taller than the tube, and filling the tube
+   with it would cut the top and bottom off. The real dimensions aren't known
+   until metadata arrives, so the fit is chosen then rather than guessed. */
+function tvFitVideo(){
+  const w = tvVideo.videoWidth;
+  const h = tvVideo.videoHeight;
+  if (!w || !h) return;
+  // Square-ish counts as upright too — cover would crop it just as badly.
+  tvVideo.classList.toggle("portrait", (w / h) < 1.15);
+}
+tvVideo.addEventListener("loadedmetadata", tvFitVideo);
+
 function tvTune(){
   tvStopSources();
   tvShowMsg("");
@@ -242,6 +254,7 @@ function tvTune(){
   tvStopStatic();
   tvVideo.classList.add("on");
   tvVideo.loop = true;
+  tvVideo.classList.remove("portrait");   // recomputed from the new file's metadata
   tvVideo.src = "/media/" + entry.file;
   const played = tvVideo.play();
   if (played && played.catch){
