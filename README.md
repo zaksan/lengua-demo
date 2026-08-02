@@ -37,14 +37,31 @@ volume the TV still works, but every uploaded video and channel assignment
 is wiped the next time you deploy. YouTube channels survive either way,
 since those are just a video id.
 
-1. Railway dashboard → your service → **Variables** → add
-   `UPLOAD_DIR` = `/data`
-2. Same service → **Settings → Volumes** → **New Volume**, mount path `/data`
-3. Redeploy.
+**Attach a volume — that's the whole setup, no variables needed:**
 
-Videos then live in `/data/videos` and the channel map in
-`/data/channels.json`, both of which persist across deploys. Locally, with
-no `UPLOAD_DIR` set, everything goes to `./uploads/` (git-ignored).
+1. Railway dashboard → your service → **Variables** tab
+2. Scroll to **Volumes** → **New Volume** (or Settings → Volumes in some
+   layouts)
+3. Set the mount path to `/data`
+4. Railway redeploys on its own
+
+Railway sets `RAILWAY_VOLUME_MOUNT_PATH` automatically when a volume is
+attached, and the server reads that, so there is deliberately no variable
+to set by hand.
+
+To confirm it worked, check the deploy logs for:
+
+```
+[tv] channel storage: /data (Railway volume)
+```
+
+If it says `local disk — NOT persistent on Railway`, the volume isn't
+attached and uploads will keep vanishing.
+
+Videos live in `<mount>/videos` and the channel map in
+`<mount>/channels.json`. Locally, with no volume and no override,
+everything goes to `./uploads/` (git-ignored). Setting `UPLOAD_DIR`
+overrides both if you ever need it.
 
 ## Running it locally first (optional)
 

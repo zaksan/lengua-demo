@@ -47,18 +47,32 @@ app.post("/api/notify", express.json(), (req, res) => {
    just an id in the metadata, which is how a 2-hour movie gets
    on the set without touching our storage at all.
 
-   UPLOAD_DIR should point at a Railway volume mount (/data) in
-   production. Without one the container's filesystem is wiped
-   on every redeploy and the channels come back empty.
+   Storage has to live on a Railway volume in production. Without
+   one the container's filesystem is wiped on every redeploy and
+   the channels come back empty.
+
+   Railway injects RAILWAY_VOLUME_MOUNT_PATH by itself whenever a
+   volume is attached, so attaching one is the only step — there
+   is deliberately no variable to set and get wrong. UPLOAD_DIR
+   stays available to override it.
    ============================================================ */
 const CHANNEL_COUNT = 13;
 const MAX_UPLOAD_BYTES = 500 * 1024 * 1024;
 
-const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(__dirname, "uploads");
+const UPLOAD_DIR = process.env.UPLOAD_DIR ||
+                   process.env.RAILWAY_VOLUME_MOUNT_PATH ||
+                   path.join(__dirname, "uploads");
 const VIDEO_DIR = path.join(UPLOAD_DIR, "videos");
 const CHANNELS_FILE = path.join(UPLOAD_DIR, "channels.json");
 
 fs.mkdirSync(VIDEO_DIR, { recursive: true });
+
+// Logged on purpose: "my channels vanished" is almost always this path
+// pointing somewhere ephemeral, and the deploy logs make that obvious.
+console.log("[tv] channel storage: " + UPLOAD_DIR +
+  (process.env.UPLOAD_DIR ? " (UPLOAD_DIR override)"
+   : process.env.RAILWAY_VOLUME_MOUNT_PATH ? " (Railway volume)"
+   : " (local disk — NOT persistent on Railway)"));
 
 function readChannels() {
   try {
