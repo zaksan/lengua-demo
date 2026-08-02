@@ -33,6 +33,7 @@ let tvAudioCtx = null;
 let ytPlayer = null;
 let ytState = "idle";      // idle | loading | ready
 let ytPending = null;      // entry waiting for the API to finish loading
+let ytAutoplayTimer = null;
 
 const tvGet = id => document.getElementById(id);
 
@@ -197,6 +198,7 @@ function tvPlayYouTube(entry){
     return;
   }
   tvYtHold.classList.add("on");
+  clearTimeout(ytAutoplayTimer);
   try {
     ytPlayer.loadVideoById({ videoId: entry.videoId, startSeconds: entry.start || 0 });
     ytPlayer.unMute();
@@ -204,11 +206,27 @@ function tvPlayYouTube(entry){
   } catch(e){
     tvStartStatic();
     tvShowMsg("NO SIGNAL");
+    return;
   }
+
+  /* Landing straight on /#tv means nothing was clicked, and browsers refuse
+     to autoplay with sound without a gesture. If it hasn't started shortly,
+     try again muted — a silent picture beats a dead tube. The same fallback
+     the uploaded-file path already uses. */
+  ytAutoplayTimer = setTimeout(() => {
+    try {
+      const state = ytPlayer.getPlayerState();
+      if (state !== YT.PlayerState.PLAYING && state !== YT.PlayerState.BUFFERING){
+        ytPlayer.mute();
+        ytPlayer.playVideo();
+      }
+    } catch(e){}
+  }, 1400);
 }
 
 /* ---------- tuning ---------- */
 function tvStopSources(){
+  clearTimeout(ytAutoplayTimer);
   try { tvVideo.pause(); } catch(e){}
   tvVideo.removeAttribute("src");
   tvVideo.load();               // drops the buffered stream instead of leaving it resident
@@ -741,8 +759,12 @@ showScreen = function(name){
   }
   showScreenBeforeBeta(name);
   if (name === "beta"){
-    tvLoadChannels();
     tvLayoutTicks();
+    /* The set comes on by itself, but only once the channel list has landed,
+       so that a channel holding something tunes straight to it rather than
+       flashing static until the dial moves. Channel 1 is left empty on
+       purpose — opening to a screen of static is the point. */
+    tvLoadChannels().then(() => { if (!tvOn) tvPowerOn(); });
   }
 };
 
