@@ -34,6 +34,8 @@ let ytPlayer = null;
 let ytState = "idle";      // idle | loading | ready
 let ytPending = null;      // entry waiting for the API to finish loading
 let ytAutoplayTimer = null;
+let ytAutoplayTries = 0;     // extra grace given to a player that is still buffering
+let tvUnmuteArmed = false;   // a muted-by-policy source is waiting for a gesture
 
 const tvGet = id => document.getElementById(id);
 
@@ -180,7 +182,13 @@ function onYouTubeIframeAPIReady(){
             ytPlayer.playVideo();
           } catch(err){}
         }
+        // Sound is confirmed working, so the silent fallback below must be
+        // called off before it mutes a channel that was never in trouble.
+        // Only PLAYING counts: a blocked player reports BUFFERING for a beat
+        // before dropping back to UNSTARTED, and calling it off then would
+        // strand the channel on a frozen frame.
         if (e.data === YT.PlayerState.PLAYING){
+          clearTimeout(ytAutoplayTimer);
           tvStopStatic();
           tvShowMsg("");
         }
@@ -189,6 +197,26 @@ function onYouTubeIframeAPIReady(){
   });
 }
 window.onYouTubeIframeAPIReady = onYouTubeIframeAPIReady;
+
+/* When a browser has refused sound and we settled for a muted picture, the
+   next touch of anything on the page is a gesture, so the sound can come back
+   right then instead of making the viewer power cycle the set to get it. */
+function tvArmUnmute(){
+  if (tvUnmuteArmed) return;
+  tvUnmuteArmed = true;
+  const restore = () => {
+    tvUnmuteArmed = false;
+    document.removeEventListener("pointerdown", restore, true);
+    document.removeEventListener("keydown", restore, true);
+    if (!tvOn) return;
+    tvVideo.muted = false;
+    if (ytPlayer && ytState === "ready"){
+      try { ytPlayer.unMute(); } catch(e){}
+    }
+  };
+  document.addEventListener("pointerdown", restore, true);
+  document.addEventListener("keydown", restore, true);
+}
 
 function tvPlayYouTube(entry){
   if (ytState !== "ready"){
@@ -209,19 +237,29 @@ function tvPlayYouTube(entry){
     return;
   }
 
-  /* Landing straight on /#tv means nothing was clicked, and browsers refuse
-     to autoplay with sound without a gesture. If it hasn't started shortly,
-     try again muted — a silent picture beats a dead tube. The same fallback
-     the uploaded-file path already uses. */
-  ytAutoplayTimer = setTimeout(() => {
+  /* Landing straight on /#tv means nothing was clicked, and browsers refuse to
+     autoplay with sound without a gesture — the player buffers for a beat and
+     then sits at UNSTARTED on a frozen frame. Retrying muted gets the picture
+     going, and tvArmUnmute hands the sound back on the viewer's first click so
+     the set never has to be power cycled to be heard. A player that is merely
+     slow to fetch is still buffering at the deadline and is given more time
+     instead of being silenced. */
+  ytAutoplayTries = 0;
+  ytAutoplayTimer = setTimeout(function check(){
+    let state;
+    try { state = ytPlayer.getPlayerState(); } catch(e){ return; }
+    if (state === YT.PlayerState.PLAYING) return;
+    if (state === YT.PlayerState.BUFFERING && ytAutoplayTries < 2){
+      ytAutoplayTries++;
+      ytAutoplayTimer = setTimeout(check, 2500);
+      return;
+    }
     try {
-      const state = ytPlayer.getPlayerState();
-      if (state !== YT.PlayerState.PLAYING && state !== YT.PlayerState.BUFFERING){
-        ytPlayer.mute();
-        ytPlayer.playVideo();
-      }
-    } catch(e){}
-  }, 1400);
+      ytPlayer.mute();
+      ytPlayer.playVideo();
+    } catch(e){ return; }
+    tvArmUnmute();
+  }, 2500);
 }
 
 /* ---------- tuning ---------- */
@@ -273,6 +311,7 @@ function tvTune(){
   tvVideo.classList.add("on");
   tvVideo.loop = true;
   tvVideo.classList.remove("portrait");   // recomputed from the new file's metadata
+  tvVideo.muted = false;                  // a past fallback must not silence this channel too
   tvVideo.src = "/media/" + entry.file;
   const played = tvVideo.play();
   if (played && played.catch){
@@ -280,6 +319,7 @@ function tvTune(){
     // browser disagrees, a muted picture beats a black screen.
     played.catch(() => {
       tvVideo.muted = true;
+      tvArmUnmute();
       tvVideo.play().catch(() => {
         tvStartStatic();
         tvShowMsg("NO SIGNAL");
@@ -735,11 +775,28 @@ function tvCloseModal(){
   tvProgress.hidden = true;
 }
 
-tvGet("tv-program").addEventListener("click", tvOpenModal);
 tvGet("tv-modal-x").addEventListener("click", tvCloseModal);
 tvModal.querySelector("[data-tv-close]").addEventListener("click", tvCloseModal);
+
+/* ---------- settings modal ---------- */
+const tvSettings = tvGet("tv-settings-modal");
+
+function tvOpenSettings(){ tvSettings.hidden = false; }
+function tvCloseSettings(){ tvSettings.hidden = true; }
+
+tvGet("tv-settings").addEventListener("click", tvOpenSettings);
+tvGet("tv-settings-x").addEventListener("click", tvCloseSettings);
+tvSettings.querySelector("[data-tv-close]").addEventListener("click", tvCloseSettings);
+// Only one card is ever on screen: settings steps aside for the one it opened.
+tvGet("tv-open-program").addEventListener("click", () => {
+  tvCloseSettings();
+  tvOpenModal();
+});
+
 document.addEventListener("keydown", e => {
-  if (e.key === "Escape" && !tvModal.hidden) tvCloseModal();
+  if (e.key !== "Escape") return;
+  if (!tvModal.hidden) tvCloseModal();
+  else if (!tvSettings.hidden) tvCloseSettings();
 });
 
 /* ---------- entry / exit ---------- */
@@ -756,6 +813,7 @@ showScreen = function(name){
   if (name !== "beta"){
     if (tvOn) tvPowerOff(true);
     tvCloseModal();
+    tvCloseSettings();
   }
   showScreenBeforeBeta(name);
   if (name === "beta"){

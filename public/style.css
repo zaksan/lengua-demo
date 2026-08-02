@@ -298,6 +298,7 @@ h1,h2,h3,.logo,.pass-brand{font-family:'Unbounded',sans-serif;}
    tube with a generous corner radius — 1965 CRTs were nearly rounded-square.
    Sizes hang off --tv-w so the whole console scales from one number. */
 .beta-screen{
+  position:relative;   /* anchors the corner controls */
   min-height:100vh;flex-direction:column;align-items:center;justify-content:center;
   padding:40px 20px;text-align:center;
   /* A dim room: the tube can't look like it's glowing against white paper. */
@@ -308,8 +309,6 @@ h1,h2,h3,.logo,.pass-brand{font-family:'Unbounded',sans-serif;}
 .beta-screen .vt-kicker{color:#A79C8C;}
 .beta-screen .vt-title{color:#F6EFE4;}
 .beta-screen .vt-sub{color:#A79C8C;max-width:440px;}
-.beta-screen .vt-back{color:#8C8375;}
-.beta-screen .vt-back:hover{color:#F6EFE4;}
 
 .tv{--tv-w:800px;width:100%;max-width:var(--tv-w);display:flex;flex-direction:column;align-items:center;}
 
@@ -526,12 +525,36 @@ h1,h2,h3,.logo,.pass-brand{font-family:'Unbounded',sans-serif;}
   background:linear-gradient(180deg,#C9932F,#8A6420);
 }
 
-.beta-actions{
-  margin-top:30px;display:flex;flex-direction:column;align-items:center;gap:10px;
+/* Back and settings sit in the corners rather than in the column, so nothing
+   competes with the set for the middle of the room. */
+.beta-corner{
+  position:absolute;top:22px;z-index:2;
+  background:rgba(255,255,255,.05);border:1px solid #453F37;border-radius:999px;
+  color:#A79C8C;font-family:'Inter',sans-serif;font-size:13px;cursor:pointer;
+  transition:color .18s ease,border-color .18s ease,background .18s ease;
 }
-.beta-actions .btn-outline{background:transparent;color:#F0E8DC;border-color:#5D564C;}
-.beta-actions .btn-outline:hover{border-color:#A79C8C;}
-.beta-hint{font-size:12px;color:#8C8375;}
+.beta-corner:hover{color:#F6EFE4;border-color:#7A7062;background:rgba(255,255,255,.1);}
+.beta-corner:focus-visible{outline:2px solid #A79C8C;outline-offset:2px;}
+.beta-corner-back{left:22px;padding:8px 15px;}
+.beta-corner-gear{
+  right:22px;width:38px;height:38px;padding:0;
+  display:flex;align-items:center;justify-content:center;
+}
+.beta-corner-gear svg{width:18px;height:18px;display:block;}
+
+/* ---------- settings modal ---------- */
+.set-list{list-style:none;display:flex;flex-direction:column;gap:10px;}
+.set-row{
+  width:100%;display:flex;align-items:center;gap:12px;text-align:left;cursor:pointer;
+  padding:14px 15px;background:#fff;border:1px solid var(--line);border-radius:12px;
+  font-family:'Inter',sans-serif;transition:border-color .18s ease,background .18s ease;
+}
+.set-row:hover{border-color:var(--pink);background:var(--paper);}
+.set-row-text{display:flex;flex-direction:column;gap:3px;flex:1;min-width:0;}
+.set-row-title{font-size:14px;font-weight:600;color:var(--ink);}
+.set-row-sub{font-size:12px;color:var(--muted);line-height:1.45;}
+.set-row-chev{font-size:20px;line-height:1;color:var(--muted);flex-shrink:0;}
+.set-tip{margin-top:16px;font-size:12px;color:var(--muted);line-height:1.5;}
 
 /* ---------- MODAL ---------- */
 .modal{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:20px;}
@@ -649,4 +672,10 @@ h1,h2,h3,.logo,.pass-brand{font-family:'Unbounded',sans-serif;}
   .tv-leg::after{margin-top:38px;}
   .tv-osd{font-size:13px;}
   .tv-msg{font-size:12px;letter-spacing:2px;}
+
+  /* The corners tuck in so they clear the title on a narrow screen. */
+  .beta-corner{top:14px;}
+  .beta-corner-back{left:12px;padding:7px 12px;font-size:12px;}
+  .beta-corner-gear{right:12px;width:34px;height:34px;}
+  .set-row{padding:12px 13px;}
 }

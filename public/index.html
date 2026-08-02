@@ -284,6 +284,16 @@
 
 <!-- SCREEN 9: BETA — CONSOLE TV -->
 <section id="screen-beta" class="screen beta-screen">
+  <!-- Kept out of the column so the set is the only thing under the title. -->
+  <button class="beta-corner beta-corner-back" id="beta-back">← Back to Lengua</button>
+  <button class="beta-corner beta-corner-gear" id="tv-settings" aria-label="Settings" aria-haspopup="dialog">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="3"></circle>
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+    </svg>
+  </button>
+
   <div class="beta-inner">
     <span class="vt-kicker">Beta features</span>
     <h2 class="vt-title">Channel surfing</h2>
@@ -342,14 +352,33 @@
       </div>
     </div>
 
-    <div class="beta-actions">
-      <button class="btn-outline" id="tv-program">Program channels</button>
-      <span class="beta-hint">Click the dial to change channel.</span>
-    </div>
-
-    <button class="vt-back" id="beta-back">← Back to Lengua</button>
   </div>
 </section>
+
+<!-- TV SETTINGS MODAL -->
+<div class="modal" id="tv-settings-modal" hidden>
+  <div class="modal-backdrop" data-tv-close></div>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="tv-settings-title">
+    <div class="modal-head">
+      <h3 class="modal-title" id="tv-settings-title">Settings</h3>
+      <button class="modal-x" id="tv-settings-x" aria-label="Close">×</button>
+    </div>
+
+    <ul class="set-list">
+      <li>
+        <button class="set-row" id="tv-open-program">
+          <span class="set-row-text">
+            <span class="set-row-title">Program channels</span>
+            <span class="set-row-sub">Upload a clip or paste a YouTube link, then assign it to one of the 13 channels.</span>
+          </span>
+          <span class="set-row-chev" aria-hidden="true">›</span>
+        </button>
+      </li>
+    </ul>
+
+    <p class="set-tip">Click the dial to change channel, or drag it round. The knob beside it turns the set off.</p>
+  </div>
+</div>
 
 <!-- PROGRAM CHANNELS MODAL -->
 <div class="modal" id="tv-modal" hidden>
