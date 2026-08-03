@@ -65,10 +65,12 @@ h1,h2,h3,.logo,.pass-brand{font-family:'Unbounded',sans-serif;}
 .hero-copy h1{font-size:44px;line-height:1.15;font-weight:600;}
 .hero-copy .accent{color:var(--ink);}
 .hero-sub{margin:18px 0 26px;font-size:16px;max-width:380px;color:#3a2f30;}
-.hero-art{width:280px;flex-shrink:0;}
+.hero-art{width:400px;flex-shrink:0;}
+/* Landscape, and close to the photo's own 740x525 so cover barely crops it —
+   a portrait frame would take the chalkboard off the right of the picture. */
 .hero-photo{
   border-radius:16px;overflow:hidden;border:6px solid #fff;
-  box-shadow:0 10px 30px rgba(0,0,0,.15);width:280px;height:340px;
+  box-shadow:0 10px 30px rgba(0,0,0,.15);width:400px;height:284px;
 }
 .hero-photo img{width:100%;height:100%;object-fit:cover;}
 .stats{
@@ -904,8 +906,8 @@ h1,h2,h3,.logo,.pass-brand{font-family:'Unbounded',sans-serif;}
   .navright .lang{display:none;}
   .hero{padding:40px 24px;flex-direction:column;}
   .hero-copy h1{font-size:34px;}
-  .hero-art{width:220px;}
-  .hero-photo{width:220px;height:270px;}
+  .hero-art{width:100%;max-width:320px;}
+  .hero-photo{width:100%;height:227px;}
   .stats{gap:26px;}
   .tutor-card{flex-direction:column;}
   .tutor-side{width:100%;text-align:left;}
