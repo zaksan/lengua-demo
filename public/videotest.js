@@ -104,6 +104,17 @@ function handleMessage(msg){
   if (msg.t === "peer-joined"){
     // Host is always the offerer — fixed roles mean no negotiation glare.
     enterCall().then(startOffer);
+    // They arrived with no idea what is already on screen here.
+    sharePlan();
+    return;
+  }
+
+  if (msg.t === "lesson"){
+    planPoints = normalisePlan(msg.points);
+    renderPlan();
+    /* Points arriving are the teacher putting something up, so the panel comes
+       out to meet them. Either side can tap it away again. */
+    if (planPoints.length) setPlanOpen(true);
     return;
   }
 
@@ -419,6 +430,9 @@ function leaveSession(){
   teardownMedia();
   myCode = null;
   myRole = null;
+  // The plan belongs to the lesson that just ended, so it clears here rather
+  // than on entering the call screen — a rejoining partner re-enters that.
+  resetPlan();
 }
 
 /* ---------- peer connection ---------- */
@@ -528,6 +542,11 @@ async function enterCall(){
   $("vt-call-title").textContent = "Live lesson · " + myCode;
 
   setSelfCorner(0);
+  /* Only the visibility of the editor and the rendered text, not the points
+     themselves — a partner who drops and rejoins runs through here again, and
+     wiping the plan under the host at that moment would be its own bug. */
+  $("vt-plan-edit").hidden = !planEditable();
+  renderPlan();
   await ensurePeer();
   applyStreamToViews();
   // No camera means nothing to composite — the audio-only fallback path.
@@ -590,25 +609,37 @@ $("vt-create-cancel").addEventListener("click", () => {
   showScreen("vtlobby");
 });
 
+/* Six digits on their own have to be retyped on the other end. The link
+   carries them, so tapping it lands on the join screen already filled in.
+   Read off the current URL rather than configured anywhere, so localhost, a
+   LAN address and the deployed domain each hand out a link to themselves. */
+function joinLink(code){
+  return location.origin + location.pathname + "#join/" + code;
+}
+
 $("vt-copy").addEventListener("click", async () => {
   const code = $("vt-code").textContent.trim();
+  const link = joinLink(code);
   let ok = false;
   if (navigator.clipboard && window.isSecureContext){
-    try { await navigator.clipboard.writeText(code); ok = true; } catch(e){}
+    try { await navigator.clipboard.writeText(link); ok = true; } catch(e){}
   }
   if (!ok){
     // Fallback for non-secure contexts and older Safari.
     const tmp = document.createElement("input");
-    tmp.value = code;
+    tmp.value = link;
     tmp.setAttribute("readonly", "");
     tmp.style.cssText = "position:fixed;top:-1000px;opacity:0;";
     document.body.appendChild(tmp);
     tmp.select();
-    tmp.setSelectionRange(0, 6);     // required on iOS
+    tmp.setSelectionRange(0, link.length);     // required on iOS
     try { ok = document.execCommand("copy"); } catch(e){}
     tmp.remove();
   }
-  vtToast(ok ? "Code copied — " + code : "Couldn't copy. The code is " + code);
+  /* The code, not the URL, in the message: it's the part worth reading, and
+     it's the fallback if the paste goes somewhere that mangles links. */
+  vtToast(ok ? "Link copied — opens the lesson with code " + code
+             : "Couldn't copy. The code is " + code);
 });
 
 $("vt-push").addEventListener("click", async () => {
@@ -641,9 +672,15 @@ $("vt-code-input").addEventListener("keydown", ev => {
   if (ev.key === "Enter") submitJoin();
 });
 $("vt-code-input").addEventListener("input", ev => {
-  // Codes get pasted with stray spaces, or as a whole URL — keep the digits.
-  const digits = ev.target.value.replace(/\D/g, "");
-  ev.target.value = digits.slice(-6);
+  /* Codes arrive pasted with stray spaces, or as a whole link now that the
+     copy button hands one out. A link is read off its #join/ segment rather
+     than by scraping digits, so a port number in the host can't be mistaken
+     for part of the code; anything else falls back to the last six digits.
+     The field deliberately has no maxlength — it would truncate a pasted
+     link to its first six characters and leave nothing to find. */
+  const raw = ev.target.value;
+  const link = raw.match(/#join\/(\d{6})/);
+  ev.target.value = link ? link[1] : raw.replace(/\D/g, "").slice(-6);
 });
 
 function showJoinError(text){
@@ -704,7 +741,164 @@ function setSelfCorner(index){
   $("vt-self").dataset.corner = VT_CORNERS[selfCorner];
 }
 
-$("vt-self").addEventListener("click", () => setSelfCorner(selfCorner + 1));
+$("vt-self").addEventListener("click", () => {
+  // Choosing a corner by hand outranks the lesson plan's opinion of where the
+  // thumbnail should sit, so there is nothing left to put back.
+  selfCornerBeforePlan = null;
+  setSelfCorner(selfCorner + 1);
+});
+
+/* ---------- lesson plan ----------
+   Up to four points the host puts on screen for both of you. Nothing here goes
+   near the video track: it's text, so each side renders its own panel from the
+   same relayed strings and it stays sharp at any size.
+
+   Content is shared; where the panel sits is not. A phone wants it docked to
+   the top bar and a wide screen may want the side rail, so placement is a local
+   preference — the same split as the self thumbnail's corner. */
+const PLAN_MAX = 4;
+const PLAN_LEN = 80;
+const PLAN_PLACES = ["top", "rail", "third"];
+
+let planPoints = [];
+let planPlace = 0;
+let planOpen = false;
+
+function planEditable(){ return myRole === "host"; }
+
+/* The lower-third band is the only placement that reaches into the bottom
+   corners, and it spans the full width, so a thumbnail down there has nowhere
+   to go along that edge. It moves to the corner above while the band is open
+   and returns when it closes — nudging it part way up a side instead would
+   leave it hovering in the middle of the picture rather than in a corner. */
+let selfCornerBeforePlan = null;
+
+function syncSelfForPlan(){
+  const inTheWay = planOpen && PLAN_PLACES[planPlace] === "third";
+  const at = VT_CORNERS[selfCorner];
+  if (inTheWay && (at === "bl" || at === "br")){
+    selfCornerBeforePlan = selfCorner;
+    setSelfCorner(VT_CORNERS.indexOf(at === "bl" ? "tl" : "tr"));
+  } else if (!inTheWay && selfCornerBeforePlan !== null){
+    const back = selfCornerBeforePlan;
+    selfCornerBeforePlan = null;
+    setSelfCorner(back);
+  }
+}
+
+function setPlanPlace(index){
+  planPlace = ((index % PLAN_PLACES.length) + PLAN_PLACES.length) % PLAN_PLACES.length;
+  $("screen-vtcall").dataset.plan = PLAN_PLACES[planPlace];
+  syncSelfForPlan();
+}
+
+function setPlanOpen(open){
+  planOpen = open;
+  const stage = $("screen-vtcall");
+  if (open) stage.setAttribute("data-plan-open", "");
+  else stage.removeAttribute("data-plan-open");
+  $("vt-plan-toggle").classList.toggle("active", open);
+  $("vt-plan-toggle").setAttribute("aria-pressed", String(open));
+  if (!open) setPlanEditing(false);
+  syncSelfForPlan();
+}
+
+/* The flag goes on the stage, not the panel: the editor is taller than the list
+   it replaces, and in the lower third that means the self thumbnail's clearance
+   has to grow with it — a rule a child element can't reach. */
+function setPlanEditing(on){
+  const stage = $("screen-vtcall");
+  if (on && !planEditable()) return;
+  if (on){
+    const inputs = $("vt-plan").querySelectorAll(".vt-plan-input");
+    inputs.forEach((input, i) => { input.value = planPoints[i] || ""; });
+    stage.setAttribute("data-plan-editing", "");
+    inputs[0].focus();
+  } else {
+    stage.removeAttribute("data-plan-editing");
+  }
+}
+
+/* Always via textContent. These strings arrive from the other browser, so
+   building markup out of them would hand the peer script execution. */
+function renderPlan(){
+  const list = $("vt-plan-list");
+  list.textContent = "";
+  if (!planPoints.length){
+    const li = document.createElement("li");
+    li.className = "vt-plan-empty";
+    li.textContent = planEditable()
+      ? "No points yet. Tap Edit to put up to four on screen."
+      : "Your teacher hasn't put up any points yet.";
+    list.appendChild(li);
+    return;
+  }
+  planPoints.forEach((text, i) => {
+    const li = document.createElement("li");
+    const n = document.createElement("span");
+    n.className = "vt-plan-n";
+    n.textContent = String(i + 1);
+    const t = document.createElement("span");
+    t.className = "vt-plan-t";
+    t.textContent = text;
+    li.append(n, t);
+    list.appendChild(li);
+  });
+}
+
+/* Defensive: the points come off the wire, so nothing about the shape or the
+   length can be assumed even though our own sender is well behaved. */
+function normalisePlan(raw){
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter(p => typeof p === "string")
+    .map(p => p.trim().slice(0, PLAN_LEN))
+    .filter(Boolean)
+    .slice(0, PLAN_MAX);
+}
+
+function resetPlan(){
+  planPoints = [];
+  selfCornerBeforePlan = null;
+  setPlanPlace(0);
+  setPlanOpen(false);
+  setPlanEditing(false);
+  renderPlan();
+  $("vt-plan-edit").hidden = !planEditable();
+}
+
+/* Called on the host after a partner arrives: they connected with no idea what
+   was already on screen. */
+function sharePlan(){
+  if (!planEditable()) return;
+  sendWs({ t: "lesson", points: planPoints });
+}
+
+$("vt-plan-toggle").addEventListener("click", () => {
+  const next = !planOpen;
+  setPlanOpen(next);
+  // Nothing to read yet, so the host's first tap goes straight to the editor.
+  if (next && planEditable() && !planPoints.length) setPlanEditing(true);
+});
+
+$("vt-plan-move").addEventListener("click", () => setPlanPlace(planPlace + 1));
+$("vt-plan-edit").addEventListener("click", () => setPlanEditing(true));
+$("vt-plan-cancel").addEventListener("click", () => setPlanEditing(false));
+
+$("vt-plan-form").addEventListener("submit", ev => {
+  ev.preventDefault();
+  const inputs = [...$("vt-plan-form").querySelectorAll(".vt-plan-input")];
+  planPoints = normalisePlan(inputs.map(i => i.value));
+  setPlanEditing(false);
+  renderPlan();
+  sharePlan();
+  vtToast(planPoints.length
+    ? "Lesson plan is up for both of you."
+    : "Lesson plan cleared.");
+});
+
+// Establishes the default placement on the stage before any lesson starts.
+resetPlan();
 
 $("vt-end").addEventListener("click", () => {
   leaveSession();

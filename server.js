@@ -359,6 +359,19 @@ wss.on("connection", ws => {
       return;
     }
 
+    /* The lesson plan is text, so it rides this socket rather than the video
+       track. Relayed verbatim and only ever to the room's other peer; the
+       browser is what decides how many points to keep and how to render
+       them, since it is the side that has to trust them. */
+    if (msg.t === "lesson") {
+      const room = rooms.get(ws.roomCode);
+      if (!room) return;
+      if (ws.role !== "host") return;   // only the teacher sets the plan
+      const other = otherPeer(room, ws);
+      if (other) send(other, { t: "lesson", points: msg.points });
+      return;
+    }
+
     if (msg.t === "leave") {
       leaveRoom(ws);
       return;

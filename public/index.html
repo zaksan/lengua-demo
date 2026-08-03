@@ -214,7 +214,7 @@
   <div class="vt-inner">
     <span class="vt-kicker">Video test</span>
     <h2 class="vt-title">Start a real lesson</h2>
-    <p class="vt-sub">One of you creates the lesson and shares the code. The other joins with it.</p>
+    <p class="vt-sub">One of you creates the lesson and shares the link. The other taps it to join.</p>
     <div class="vt-actions">
       <button class="btn-primary btn-lg" id="vt-create">Create lesson</button>
       <button class="btn-outline btn-lg" id="vt-open-join">Join lesson</button>
@@ -229,7 +229,7 @@
     <span class="vt-kicker">Your lesson code</span>
     <div class="vt-code" id="vt-code">------</div>
     <div class="vt-code-actions">
-      <button class="btn-primary" id="vt-copy">Copy code</button>
+      <button class="btn-primary" id="vt-copy">Copy link</button>
       <button class="btn-outline" id="vt-push">Send via Pushover</button>
     </div>
     <div class="vt-preview">
@@ -247,7 +247,7 @@
     <span class="vt-kicker">Join a lesson</span>
     <h2 class="vt-title">Enter the 6-digit code</h2>
     <input id="vt-code-input" class="vt-input" type="text" inputmode="numeric"
-           autocomplete="off" maxlength="6" placeholder="000000" aria-label="Six digit lesson code">
+           autocomplete="off" placeholder="000000" aria-label="Six digit lesson code">
     <p class="vt-error" id="vt-join-error"></p>
     <button class="btn-primary btn-lg" id="vt-join">Join lesson</button>
     <button class="vt-back" id="vt-join-back">← Back</button>
@@ -270,6 +270,39 @@
     <span class="call-timer" id="vt-timer">00:00</span>
   </div>
 
+  <!-- Lesson plan. Text, so unlike the filter it never touches the video
+       track: each side renders its own copy from the points relayed over the
+       signalling socket, and it stays sharp at any size. The banner is the
+       panel's header rather than a separate sticker. -->
+  <aside class="vt-plan" id="vt-plan">
+    <div class="vt-plan-banner">
+      <span class="vt-plan-brand">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M4 4h16v11H9l-5 5V4z" fill="#16130F"/>
+        </svg>
+        Lengua
+      </span>
+      <span class="vt-plan-kicker">Today's plan</span>
+      <button class="vt-plan-btn" id="vt-plan-move"
+              title="Move the lesson plan" aria-label="Move the lesson plan">⤢</button>
+      <button class="vt-plan-btn" id="vt-plan-edit"
+              title="Edit the lesson points">Edit</button>
+    </div>
+
+    <ol class="vt-plan-list" id="vt-plan-list"></ol>
+
+    <form class="vt-plan-form" id="vt-plan-form">
+      <input class="vt-plan-input" type="text" maxlength="80" placeholder="Lesson point 1" aria-label="Lesson point 1">
+      <input class="vt-plan-input" type="text" maxlength="80" placeholder="Lesson point 2" aria-label="Lesson point 2">
+      <input class="vt-plan-input" type="text" maxlength="80" placeholder="Lesson point 3" aria-label="Lesson point 3">
+      <input class="vt-plan-input" type="text" maxlength="80" placeholder="Lesson point 4" aria-label="Lesson point 4">
+      <div class="vt-plan-actions">
+        <button type="button" class="vt-plan-action" id="vt-plan-cancel">Cancel</button>
+        <button type="submit" class="vt-plan-action primary">Show partner</button>
+      </div>
+    </form>
+  </aside>
+
   <button class="vt-self" id="vt-self" data-corner="br"
           aria-label="Move your video to the next corner">
     <video id="vt-local" class="vt-video mirror" autoplay playsinline muted></video>
@@ -282,6 +315,7 @@
       <button class="ctrl-btn" id="vt-mic" title="Mute microphone">🎤</button>
       <button class="ctrl-btn" id="vt-cam" title="Turn camera off">📷</button>
       <button class="ctrl-btn" id="vt-filter" title="Space ranger filter" aria-pressed="false">⚡</button>
+      <button class="ctrl-btn" id="vt-plan-toggle" title="Lesson plan" aria-pressed="false">📋</button>
       <button class="ctrl-btn end" id="vt-end">End lesson</button>
     </div>
   </div>
