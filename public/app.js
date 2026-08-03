@@ -24,7 +24,57 @@ function showScreen(name){
     document.getElementById("screen-" + s).classList.toggle("active", s === name);
   });
   window.scrollTo(0,0);
+  syncHash(name);
 }
+
+/* ---------- DEEP LINKS ----------
+   The two live features are worth sending to someone directly, so each has a
+   hash of its own. Two halves that have to agree: the address bar follows the
+   screen, so whatever you are looking at is a link you can copy, and the screen
+   follows the address bar, so a link someone pastes into a tab they already have
+   open still goes somewhere. Without the second half a hash edit changes the URL
+   and nothing else, since the browser doesn't reload for it. */
+const SCREEN_HASH = { vtlobby: "#video", beta: "#tv" };
+const HASH_SCREEN = { "#video": "vtlobby", "#tv": "beta" };
+
+/* The screens inside a lesson keep the link you arrived on: a guest who came in
+   through #join/123456 shouldn't have it rewritten under them, and the host has
+   nothing shareable to offer beyond the lobby anyway. */
+const HASH_KEEP = ["vtjoin", "vtcreate", "vtcall"];
+
+function syncHash(name){
+  if (HASH_KEEP.includes(name)) return;
+  const want = SCREEN_HASH[name] || "";
+  if ((location.hash || "") === want) return;   // nothing moved, nothing to record
+  /* An entry, so the browser's back button walks back out of a deep-linked
+     screen instead of leaving the site. pushState rather than assigning
+     location.hash, which would re-enter the router through hashchange. */
+  history.pushState(null, "", location.pathname + location.search + want);
+}
+
+function routeHash(){
+  const hash = location.hash || "";
+  const join = hash.match(/^#join\/(\d{6})$/);
+  if (join){
+    document.getElementById("vt-code-input").value = join[1];
+    showScreen("vtjoin");
+    return;
+  }
+  if (HASH_SCREEN[hash]) showScreen(HASH_SCREEN[hash]);
+  // Backing out of a deep link lands on the landing page rather than replaying
+  // the intro reel, which is a first-visit thing.
+  else if (!hash) showScreen("landing");
+}
+
+window.addEventListener("hashchange", routeHash);
+
+/* Deferred to DOMContentLoaded so the initial route runs after videotest.js and
+   beta.js have wrapped showScreen — their wrappers release the camera and warm
+   the TV audio, and a link straight into either screen has to get that too. It
+   fires before images finish, so there is no flash of the intro screen. */
+document.addEventListener("DOMContentLoaded", () => {
+  if (location.hash) routeHash();
+});
 
 /* ---------- INTRO REEL ---------- */
 (function initIntro(){

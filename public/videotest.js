@@ -960,16 +960,5 @@ window.addEventListener("pagehide", () => {
   if (localStream) localStream.getTracks().forEach(t => { try { t.stop(); } catch(e){} });
 });
 
-/* Deep links, so the flow is reachable without the nav bar — handy when
-   the code arrives on a phone. #video opens the lobby; #join/123456
-   prefills the code ready to go. */
-(function initHashRoute(){
-  const hash = location.hash || "";
-  const join = hash.match(/^#join\/(\d{6})$/);
-  if (join){
-    showScreen("vtjoin");
-    $("vt-code-input").value = join[1];
-    return;
-  }
-  if (hash === "#video") showScreen("vtlobby");
-})();
+/* Deep links (#video, #join/123456) are routed in app.js, which owns showScreen
+   and so can keep the address bar and the screen in step both ways. */

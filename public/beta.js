@@ -959,6 +959,5 @@ showScreen = function(name){
 tvRenderTicks();
 tvSetChannel(1, { silent: true, absoluteAngle: 0 });
 
-/* Matches the #video deep link videotest.js already supports, so the set is
-   reachable directly from a bookmark or a link sent to a phone. */
-if ((location.hash || "") === "#tv") showScreen("beta");
+/* The #tv deep link is routed in app.js, after this file has wrapped showScreen
+   so that arriving straight here still powers the set on. */
