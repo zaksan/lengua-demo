@@ -272,6 +272,27 @@ h1,h2,h3,.logo,.pass-brand{font-family:'Unbounded',sans-serif;}
 }
 .vt-status{color:var(--muted);font-size:14px;margin-top:10px;}
 
+/* Lesson prep, on the waiting screen. Deliberately not the dark glass of the
+   in-call panel: nothing is playing behind it here, so it reads as a form. */
+.vt-prep{
+  width:100%;margin:22px 0 2px;padding:16px;text-align:left;
+  background:#fff;border:1px solid var(--line);border-radius:14px;
+}
+.vt-prep-title{display:block;font-size:14px;font-weight:600;}
+.vt-prep-sub{color:var(--muted);font-size:12.5px;margin:4px 0 12px;}
+.vt-prep-fields{display:flex;flex-direction:column;gap:8px;}
+.vt-prep-input{
+  font-family:'Inter',sans-serif;font-size:14px;width:100%;
+  padding:10px 12px;border:1px solid var(--line);border-radius:10px;
+  background:var(--paper);color:var(--ink);
+}
+.vt-prep-input:focus{outline:none;border-color:var(--pink);background:#fff;}
+.vt-prep-clear{
+  margin-top:12px;padding:0;background:none;border:none;
+  font-family:'Inter',sans-serif;font-size:12.5px;color:var(--muted);cursor:pointer;
+}
+.vt-prep-clear:hover{color:var(--pink-dark);}
+
 .vt-input{
   font-family:'JetBrains Mono',monospace;font-size:34px;font-weight:700;
   text-align:center;letter-spacing:8px;width:100%;max-width:280px;

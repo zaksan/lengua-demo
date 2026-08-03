@@ -232,6 +232,22 @@
       <button class="btn-primary" id="vt-copy">Copy link</button>
       <button class="btn-outline" id="vt-push">Send via Pushover</button>
     </div>
+
+    <!-- The plan is prep, so it is written here, while the wait for a partner is
+         dead time anyway. The panel on the call screen keeps its own editor for
+         changing the plan once the lesson is under way. -->
+    <div class="vt-prep">
+      <span class="vt-prep-title">Today's plan</span>
+      <p class="vt-prep-sub">Up to four points. Your partner sees them as soon as they join.</p>
+      <div class="vt-prep-fields" id="vt-prep-fields">
+        <input class="vt-prep-input" type="text" maxlength="80" placeholder="Lesson point 1" aria-label="Lesson point 1">
+        <input class="vt-prep-input" type="text" maxlength="80" placeholder="Lesson point 2" aria-label="Lesson point 2">
+        <input class="vt-prep-input" type="text" maxlength="80" placeholder="Lesson point 3" aria-label="Lesson point 3">
+        <input class="vt-prep-input" type="text" maxlength="80" placeholder="Lesson point 4" aria-label="Lesson point 4">
+      </div>
+      <button type="button" class="vt-prep-clear" id="vt-prep-clear" hidden>Clear the plan</button>
+    </div>
+
     <div class="vt-preview">
       <video id="vt-preview-video" class="mirror" autoplay playsinline muted></video>
       <span class="vt-preview-label">You</span>

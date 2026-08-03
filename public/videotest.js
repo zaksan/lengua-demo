@@ -547,6 +547,10 @@ async function enterCall(){
      wiping the plan under the host at that moment would be its own bug. */
   $("vt-plan-edit").hidden = !planEditable();
   renderPlan();
+  /* A plan written before the call was written to be shown, so it opens with the
+     call rather than waiting for a tap. The guest arrives with nothing and opens
+     on the points landing instead — see the lesson branch of handleMessage. */
+  setPlanOpen(planPoints.length > 0);
   await ensurePeer();
   applyStreamToViews();
   // No camera means nothing to composite — the audio-only fallback path.
@@ -864,6 +868,7 @@ function resetPlan(){
   setPlanOpen(false);
   setPlanEditing(false);
   renderPlan();
+  seedPrep();   // the next lesson starts from a blank plan, not the last one's
   $("vt-plan-edit").hidden = !planEditable();
 }
 
@@ -873,6 +878,37 @@ function sharePlan(){
   if (!planEditable()) return;
   sendWs({ t: "lesson", points: planPoints });
 }
+
+/* ---------- writing the plan before the call ----------
+   The waiting screen is where a teacher actually plans a lesson: mid-call the
+   student is already watching you type. The in-call editor stays, for changing
+   the plan once you are both there.
+
+   Read on every keystroke rather than behind a Save button. The partner can
+   arrive between any two keys, and their arrival switches this screen for the
+   call — a draft still sitting in these inputs would be lost at exactly the
+   moment it was needed. */
+function prepInputs(){
+  return [...$("vt-prep-fields").querySelectorAll(".vt-prep-input")];
+}
+
+function readPrep(){
+  planPoints = normalisePlan(prepInputs().map(i => i.value));
+  $("vt-prep-clear").hidden = !planPoints.length;
+}
+
+function seedPrep(){
+  prepInputs().forEach((input, i) => { input.value = planPoints[i] || ""; });
+  $("vt-prep-clear").hidden = !planPoints.length;
+}
+
+$("vt-prep-fields").addEventListener("input", readPrep);
+
+$("vt-prep-clear").addEventListener("click", () => {
+  planPoints = [];
+  seedPrep();
+  prepInputs()[0].focus();
+});
 
 $("vt-plan-toggle").addEventListener("click", () => {
   const next = !planOpen;
